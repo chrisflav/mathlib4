@@ -111,20 +111,24 @@ instance preservesLimits_diagramFunctor (X : C) [HasLimitsOfSize.{max t u v, max
   intro _ _
   apply preservesLimitsOfShape_diagramFunctor.{max t u v}
 
-variable [∀ X : C, HasColimitsOfShape (J.Cover X)ᵒᵖ D]
 variable [HasForget.{t} D]
-variable [∀ X : C, PreservesColimitsOfShape (J.Cover X)ᵒᵖ (forget D)]
-variable [∀ X : C, Small.{t, max u v} (J.Cover X)ᵒᵖ]
+--variable {E : C → Type*} [∀ X, Small.{t} (E X)] [∀ X, Category (E X)]
+--  [∀ X, IsCofiltered (E X)] (L : ∀ X, E X ⥤ (J.Cover X)) [∀ X, (L X).Initial]
+variable [∀ X : C, HasColimitsOfShape (J.Cover X)ᵒᵖ D]
+--variable [∀ X, HasColimitsOfShape (E X)ᵒᵖ D] [∀ X, PreservesColimitsOfShape (E X)ᵒᵖ (forget D)]
 
 /-- An auxiliary definition to be used in the proof that `J.plusFunctor D` commutes
 with finite limits. -/
 def liftToPlusObjLimitObj {K : Type s} [SmallCategory K] [FinCategory K]
     [HasLimitsOfShape K D] [PreservesLimitsOfShape K (forget D)]
-    [ReflectsLimitsOfShape K (forget D)] (F : K ⥤ Cᵒᵖ ⥤ D) (X : C)
+    [∀ X, PreservesLimitsOfShape K (colim : ((J.Cover X)ᵒᵖ ⥤ D) ⥤ _)]
+    [ReflectsLimitsOfShape K (forget D)]
+    (F : K ⥤ Cᵒᵖ ⥤ D) (X : C)
     (S : Cone (F ⋙ J.plusFunctor D ⋙ (evaluation Cᵒᵖ D).obj (op X))) :
     S.pt ⟶ (J.plusObj (limit F)).obj (op X) :=
-  let x := (J.Cover X)ᵒᵖ
-  let F' := F ⋙ J.diagramFunctor D X
+  --have : Small.{t} (E X)ᵒᵖ := Opposite.small
+  --have : PreservesLimitsOfShape K (colim : ((J.Cover X)ᵒᵖ ⥤ D) ⥤ _) :=
+  --  preservesLimitsOfShape_of_natIso (Functor.Final.colimIso (L X).op (E := D))
   let e := colimitLimitIso (F ⋙ J.diagramFunctor D X)
   let t : J.diagram (limit F) X ≅ limit (F ⋙ J.diagramFunctor D X) :=
     (isLimitOfPreserves (J.diagramFunctor D X) (limit.isLimit F)).conePointUniqueUpToIso
@@ -151,6 +155,7 @@ def liftToPlusObjLimitObj {K : Type s} [SmallCategory K] [FinCategory K]
 -- evaluation preserves limits.
 theorem liftToPlusObjLimitObj_fac {K : Type s} [SmallCategory K] [FinCategory K]
     [HasLimitsOfShape K D] [PreservesLimitsOfShape K (forget D)]
+    [∀ X, PreservesLimitsOfShape K (colim : ((J.Cover X)ᵒᵖ ⥤ D) ⥤ _)]
     [ReflectsLimitsOfShape K (forget D)] (F : K ⥤ Cᵒᵖ ⥤ D) (X : C)
     (S : Cone (F ⋙ J.plusFunctor D ⋙ (evaluation Cᵒᵖ D).obj (op X))) (k) :
     liftToPlusObjLimitObj F X S ≫ (J.plusMap (limit.π F k)).app (op X) = S.π.app k := by
@@ -174,8 +179,9 @@ theorem liftToPlusObjLimitObj_fac {K : Type s} [SmallCategory K] [FinCategory K]
   erw [colimit.ι_desc]
   rfl
 
-instance preservesLimitsOfShape_plusFunctor
+instance preservesLimitsOfShape_plusFunctor_of_initial
     (K : Type t) [SmallCategory K] [FinCategory K] [HasLimitsOfShape K D]
+    [∀ X, PreservesLimitsOfShape K (colim : ((J.Cover X)ᵒᵖ ⥤ D) ⥤ _)]
     [PreservesLimitsOfShape K (forget D)] [ReflectsLimitsOfShape K (forget D)] :
     PreservesLimitsOfShape K (J.plusFunctor D) := by
   constructor; intro F; apply preservesLimit_of_evaluation; intro X
@@ -202,21 +208,24 @@ instance preservesLimitsOfShape_plusFunctor
     rw [← Category.assoc, ← NatTrans.comp_app, limit.lift_π]
     rfl
 
-instance preserveFiniteLimits_plusFunctor
-    [HasFiniteLimits D] [PreservesFiniteLimits (forget D)] [(forget D).ReflectsIsomorphisms] :
+instance preserveFiniteLimits_plusFunctor_of_initial
+    [HasFiniteLimits D] [PreservesFiniteLimits (forget D)] [(forget D).ReflectsIsomorphisms]
+    [H : ∀ (X : C), PreservesFiniteLimits (colim : ((J.Cover X)ᵒᵖ ⥤ D) ⥤ _)] :
     PreservesFiniteLimits (J.plusFunctor D) := by
   apply preservesFiniteLimits_of_preservesFiniteLimitsOfSize.{t}
   intro K _ _
   have : ReflectsLimitsOfShape K (forget D) := reflectsLimitsOfShape_of_reflectsIsomorphisms
-  apply preservesLimitsOfShape_plusFunctor
+  apply preservesLimitsOfShape_plusFunctor_of_initial
 
-instance preservesLimitsOfShape_sheafification
+instance preservesLimitsOfShape_sheafification_of_initial
     (K : Type t) [SmallCategory K] [FinCategory K] [HasLimitsOfShape K D]
+    [∀ X, PreservesLimitsOfShape K (colim : ((J.Cover X)ᵒᵖ ⥤ D) ⥤ _)]
     [PreservesLimitsOfShape K (forget D)] [ReflectsLimitsOfShape K (forget D)] :
     PreservesLimitsOfShape K (J.sheafification D) :=
   Limits.comp_preservesLimitsOfShape _ _
 
-instance preservesFiniteLimits_sheafification
+instance preservesFiniteLimits_sheafification_of_initial
+    [∀ X, PreservesFiniteLimits (colim : ((J.Cover X)ᵒᵖ ⥤ D) ⥤ _)]
     [HasFiniteLimits D] [PreservesFiniteLimits (forget D)] [(forget D).ReflectsIsomorphisms] :
     PreservesFiniteLimits (J.sheafification D) :=
   Limits.comp_preservesFiniteLimits _ _
@@ -228,18 +237,22 @@ namespace CategoryTheory
 section
 
 variable {D : Type w} [Category.{t} D]
-variable [∀ (P : Cᵒᵖ ⥤ D) (X : C) (S : J.Cover X), HasMultiequalizer (S.index P)]
-variable [∀ X : C, HasColimitsOfShape (J.Cover X)ᵒᵖ D]
 variable {FD : D → D → Type*} {CD : D → Type t}
 variable [∀ X Y, FunLike (FD X Y) (CD X) (CD Y)] [ConcreteCategory.{t} D FD]
-variable [∀ X : C, PreservesColimitsOfShape (J.Cover X)ᵒᵖ (forget D)]
-variable [(forget D).ReflectsIsomorphisms]
 variable [∀ {X : C} (S : J.Cover X), PreservesLimitsOfShape (WalkingMulticospan S.shape) (forget D)]
+variable [(forget D).ReflectsIsomorphisms]
 variable (K : Type w')
 variable [SmallCategory K] [FinCategory K] [HasLimitsOfShape K D]
 
-instance preservesLimitsOfShape_presheafToSheaf
-    [PreservesLimits (forget D)] [∀ X : C, Small.{t, max u v} (J.Cover X)ᵒᵖ] :
+section
+
+variable [∀ (P : Cᵒᵖ ⥤ D) (X : C) (S : J.Cover X), HasMultiequalizer (S.index P)]
+variable [∀ X : C, PreservesColimitsOfShape (J.Cover X)ᵒᵖ (forget D)]
+variable [∀ X : C, HasColimitsOfShape (J.Cover X)ᵒᵖ D]
+
+instance preservesLimitsOfShape_presheafToSheaf_of_initial
+    [∀ X, PreservesFiniteLimits (colim : ((J.Cover X)ᵒᵖ ⥤ D) ⥤ _)]
+    [PreservesLimits (forget D)] :
     PreservesLimitsOfShape K (plusPlusSheaf J D) := by
   let e := (FinCategory.equivAsType K).symm.trans (AsSmall.equiv.{0, 0, t})
   haveI : HasLimitsOfShape (AsSmall.{t} (FinCategory.AsType K)) D :=
@@ -258,11 +271,12 @@ instance preservesLimitsOfShape_presheafToSheaf
     reflectsLimitsOfShape_of_reflectsIsomorphisms
   apply isLimitOfPreserves (J.sheafification D) hS
 
-instance preservesfiniteLimits_presheafToSheaf [PreservesLimits (forget D)]
-    [∀ X : C, Small.{t, max u v} (J.Cover X)ᵒᵖ] [HasFiniteLimits D] :
+instance preservesFiniteLimits_presheafToSheaf [PreservesLimits (forget D)]
+    [∀ X, PreservesFiniteLimits (colim : ((J.Cover X)ᵒᵖ ⥤ D) ⥤ _)]
+    [HasFiniteLimits D] :
     PreservesFiniteLimits (plusPlusSheaf J D) := by
   apply preservesFiniteLimits_of_preservesFiniteLimitsOfSize.{t}
-  intros
+  intro K _ _
   infer_instance
 
 variable (J D)
@@ -288,10 +302,47 @@ lemma toSheafify_plusPlusIsoSheafify_hom (P : Cᵒᵖ ⥤ D) :
   dsimp [GrothendieckTopology.toSheafify, plusPlusAdjunction]
   rw [Category.comp_id]
 
-instance [PreservesLimits (forget D)] [HasFiniteLimits D]
-    [∀ X : C, Small.{t, max u v} (J.Cover X)ᵒᵖ] :
+instance hasSheafify [∀ X, PreservesFiniteLimits (colim : ((J.Cover X)ᵒᵖ ⥤ D) ⥤ _)]
+    [PreservesLimits (forget D)] [HasFiniteLimits D] :
     HasSheafify J D :=
   HasSheafify.mk' J D (plusPlusAdjunction J D)
+
+end
+
+variable {E : C → Type*} [∀ X, Small.{t} (E X)] [∀ X, Category (E X)]
+  [∀ X, IsCofiltered (E X)] (L : ∀ X, E X ⥤ (J.Cover X)) [∀ X, (L X).Initial]
+
+variable {R : ∀ {X : C}, J.Cover X → Type*} [∀ {X : C} (S : J.Cover X), Category (R S)]
+  (T : ∀ {X : C} (S : J.Cover X), R S ⥤ WalkingMulticospan S.shape)
+  [∀ {X : C} (S : J.Cover X), (T S).Initial]
+
+include L T in
+lemma hasSheafify_of_initial [PreservesLimits (forget D)] [HasFiniteLimits D]
+    [∀ X, EssentiallySmall.{t} (E X)] :
+    HasSheafify J D := by
+  have (X : C) : HasColimitsOfShape (E X)ᵒᵖ D :=
+    sorry
+  have (X : C) : PreservesFiniteLimits (colim : ((E X)ᵒᵖ ⥤ D) ⥤ _) :=
+    sorry
+  have (X : C) : PreservesColimitsOfShape (E X)ᵒᵖ (forget D) :=
+    sorry
+  have (X : C) (S : J.Cover X) : HasLimitsOfShape (R S) D :=
+    sorry
+  have (X : C) (S : J.Cover X) : HasLimitsOfShape (WalkingMulticospan S.shape) D :=
+    Functor.Initial.hasLimitsOfShape_of_initial (T S)
+  let t {X : C} (S : J.Cover X) := WalkingMulticospan S.shape
+  let x (P : Cᵒᵖ ⥤ D) {X : C} (S : J.Cover X) := (S.index P).multicospan
+  have (P : Cᵒᵖ ⥤ D) (X : C) (S : J.Cover X) : HasMultiequalizer (S.index P) := by
+    infer_instance
+  have (X : C) : HasColimitsOfShape (J.Cover X)ᵒᵖ D :=
+    Functor.Final.hasColimitsOfShape_of_final (L X).op
+  have (X : C) : PreservesColimitsOfShape (J.Cover X)ᵒᵖ (forget D) :=
+    Functor.Final.preservesColimitsOfShape_of_final (L X).op _
+  have (X : C) : PreservesFiniteLimits (colim : ((J.Cover X)ᵒᵖ ⥤ D) ⥤ _) := by
+    constructor
+    intro K _ _
+    apply preservesLimitsOfShape_of_natIso (Functor.Final.colimIso (L X).op)
+  apply hasSheafify
 
 end
 
