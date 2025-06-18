@@ -2,14 +2,126 @@ import Mathlib.AlgebraicGeometry.Sites.BigZariski
 import Mathlib.AlgebraicGeometry.Sites.Small
 import Mathlib.AlgebraicGeometry.PullbackCarrier
 import Mathlib.CategoryTheory.Sites.Equivalence
+import Mathlib.CategoryTheory.Limits.MonoCoprod
+import Mathlib.CategoryTheory.Limits.Shapes.DisjointCoproduct
 
 universe r t w v u
 
-open AlgebraicGeometry CategoryTheory TopologicalSpace Limits
+open AlgebraicGeometry CategoryTheory TopologicalSpace Limits Opposite
 
 namespace CategoryTheory
 
 variable {C : Type u} [Category.{v} C] {X : C}
+
+lemma Limits.IsTerminal.subsingleton_forget [HasForget C]
+    [PreservesLimit (Functor.empty.{0} C) (forget C)]
+    {X : C} (h : IsTerminal X) :
+    Subsingleton ((forget C).obj X) :=
+  (Types.isTerminalEquivIsoPUnit _ <| h.isTerminalObj (forget C) X).toEquiv.subsingleton
+
+def Limits.Cofan.isColimitMapCoconeEquiv {D : Type*} [Category D] (F : C ⥤ D)
+    {ι : Type*} (X : ι → C) (c : Cofan X) :
+    IsColimit (F.mapCocone c) ≃ IsColimit (Cofan.mk _ fun i ↦ F.map (c.inj i)) :=
+  (IsColimit.precomposeHomEquiv Discrete.natIsoFunctor.symm (F.mapCocone c)).symm.trans <|
+    IsColimit.equivIsoColimit (Cocones.ext (Iso.refl _))
+
+def Limits.Fan.isLimitMapConeEquiv {D : Type*} [Category D] (F : C ⥤ D)
+    {ι : Type*} (X : ι → C) (c : Fan X) :
+    IsLimit (F.mapCone c) ≃ IsLimit (Fan.mk _ fun i ↦ F.map (c.proj i)) :=
+  (IsLimit.postcomposeHomEquiv Discrete.natIsoFunctor (F.mapCone c)).symm.trans <|
+    IsLimit.equivIsoLimit (Cones.ext (Iso.refl _))
+
+section
+
+variable (J : GrothendieckTopology C) [J.Subcanonical]
+variable {ι : Type r} (X : ι → C)
+variable {c : Cofan X} (hc : IsColimit c) (H : (Sieve.ofArrows _ c.inj) ∈ J c.pt)
+
+lemma eq_of_eq
+    (s : Cofan fun i ↦ J.yoneda.obj (X i))
+    {Y : C} {i j : ι} (a : Y ⟶ X i) (b : Y ⟶ X j)
+    (hab : a ≫ c.inj i = b ≫ c.inj j)
+    [∀ i, Mono (c.inj i)]
+    (Hdisj : ∀ {i j : ι} (_ : i ≠ j) {Y : C} (a : Y ⟶ X i)
+      (b : Y ⟶ X j) (_ : a ≫ c.inj i = b ≫ c.inj j), Nonempty (IsInitial Y))
+    (hempty : (Y : C) → IsInitial Y → ⊥ ∈ J Y) :
+    (s.inj i).val.app (op Y) a = (s.inj j).val.app (op Y) b := by
+  by_cases h : i = j
+  · subst h
+    obtain rfl := (cancel_mono _).mp hab
+    rfl
+  · obtain ⟨h⟩ := Hdisj h a b hab
+    exact (Sheaf.isTerminalOfBotCover s.pt _ (hempty Y h)).subsingleton_forget.elim _ _
+
+@[simps]
+def Sieve.toFunctor {X : C} (S : Sieve X) {Y : C} (f : Y ⟶ X) (hf : S f) :
+    yoneda.obj Y ⟶ S.functor where
+  app Z g := ⟨g ≫ f, S.downward_closed hf g⟩
+
+noncomputable
+def isColimit_cofanMk_yoneda
+    [∀ (i : ι), Mono (c.inj i)]
+    (hempty : (Y : C) → IsInitial Y → ⊥ ∈ J Y)
+    (Hdisj : ∀ {i j : ι} (_ : i ≠ j) {Y : C} (a : Y ⟶ X i)
+    (b : Y ⟶ X j), a ≫ c.inj i = b ≫ c.inj j → Nonempty (IsInitial Y)) :
+    IsColimit (Cofan.mk _ fun i ↦ J.yoneda.map (c.inj i)) := by
+  refine mkCofanColimit _ (fun s ↦ ⟨?_⟩) (fun s j ↦ ?_) fun s m hm ↦ ?_
+  · refine (s.pt.2.isSheafFor (Sieve.ofArrows _ c.inj) H).extend ?_
+    refine ⟨fun Y g ↦ ((s.inj (Sieve.ofArrows.i g.2)).val.app Y) (Sieve.ofArrows.h g.2), ?_⟩
+    · intro ⟨Y⟩ ⟨Z⟩ ⟨(g : Z ⟶ Y)⟩
+      ext u
+      simp only [Sieve.functor_obj, Sieve.generate_apply, GrothendieckTopology.yoneda_obj_val,
+        types_comp_apply, Sieve.functor_map_coe]
+      rw [← eq_of_eq (J := J) _ s (g ≫ Sieve.ofArrows.h u.2)
+        (Sieve.ofArrows.h <| Sieve.downward_closed _ u.2 g) (by simp) Hdisj hempty]
+      apply congrFun ((s.inj _).val.naturality g.op)
+  · ext : 1
+    let u (j : ι) : yoneda.obj (X j) ⟶ (Sieve.ofArrows _ c.inj).functor :=
+      (Sieve.ofArrows _ c.inj).toFunctor (c.inj j) (Sieve.ofArrows_mk _ _ j)
+    have (j : ι) : u j ≫ (Sieve.ofArrows _ c.inj).functorInclusion = yoneda.map (c.inj j) :=
+      rfl
+    simp only [GrothendieckTopology.yoneda_obj_val, Cofan.mk_pt, cofan_mk_inj, Sieve.functor_obj,
+      Sieve.generate_apply, Sheaf.comp_val, GrothendieckTopology.yoneda_map_val, ← this,
+      Category.assoc, Presieve.IsSheafFor.functorInclusion_comp_extend]
+    ext Z (g : Z.unop ⟶ X j)
+    have h : Sieve.ofArrows X c.inj (g ≫ c.inj j) :=
+      Sieve.downward_closed _ (Sieve.ofArrows_mk _ _ j) _
+    exact eq_of_eq (J := J) _ s (Sieve.ofArrows.h h) g (by simp) Hdisj hempty
+  · ext : 1
+    dsimp only [Cofan.mk_pt, GrothendieckTopology.yoneda_obj_val, id_eq, Sieve.functor_obj,
+      Sieve.generate_apply]
+    apply Presieve.IsSheafFor.unique_extend
+    ext Y ⟨g, hg⟩
+    simp [← hm (Sieve.ofArrows.i hg)]
+
+instance [MonoCoprod C] [∀ {κ : Type r}, HasColimitsOfShape (Discrete κ) C]
+    {ι : Type r} (X : ι → C)
+    (H : ∀ {c : Cofan X} (hc : IsColimit c), Sieve.ofArrows _ c.inj ∈ J c.pt) :
+    PreservesColimit (Discrete.functor X) J.yoneda := by
+  constructor
+  intro (c : Cofan X) hc
+  constructor
+  refine (Limits.Cofan.isColimitMapCoconeEquiv _ _ _).symm ?_
+  have : ∀ i, Mono (c.inj i) := sorry
+  refine isColimit_cofanMk_yoneda _ _ (H hc) ?_ ?_
+  · sorry
+  · sorry
+
+-- what is the correct spelling? depending small refactor of `MonoCoprod` and co.
+lemma foo [MonoCoprod C] [∀ {κ : Type r}, HasColimitsOfShape (Discrete κ) C]
+    {ι : Type r} :
+    PreservesColimitsOfShape (Discrete ι) J.yoneda := by
+  apply (config := { allowSynthFailures := true }) preservesColimitsOfShape_of_discrete
+  refine fun X ↦ ⟨fun {c : Cofan X} hc ↦ ⟨?_⟩⟩
+  refine (Limits.Cofan.isColimitMapCoconeEquiv _ _ _).symm ?_
+  have : ∀ (i : ι), Mono (c.inj i) := sorry
+  refine isColimit_cofanMk_yoneda _ _ ?_ ?_ ?_
+  · sorry
+  · sorry
+  · sorry
+
+#exit
+end
 
 structure _root_.CategoryTheory.Presieve.GenerateStruct (R : Presieve X) (S : Sieve X) where
   obj {Y : C} (f : Y ⟶ X) (hf : S f) : C
@@ -86,6 +198,39 @@ instance {J : GrothendieckTopology C} {X Y : C} (f : Y ⟶ X) [IsIso f] :
 namespace Pretopology
 
 variable [HasPullbacks C]
+
+-- this does not work
+def toGrothendieck' (J : Pretopology C) : GrothendieckTopology C where
+  sieves X S := ∃ R ∈ J X, Sieve.generate R = S
+  top_mem' X := by
+    use Presieve.singleton (𝟙 X)
+    simp [J.has_isos (𝟙 X)]
+  pullback_stable' X Y S f := by
+    rintro ⟨R, hR, rfl⟩
+    use R.pullbackArrows f
+    refine ⟨?_, ?_⟩
+    · exact J.pullbacks f R hR
+    · exact Sieve.pullbackArrows_comm f R
+  transitive' := by
+    rintro X - ⟨R, hR, rfl⟩ S H
+    choose T hT heq using H
+    use R.bind (fun Y f hf ↦ T (Sieve.le_generate _ _ hf))
+    refine ⟨?_, ?_⟩
+    · apply J.transitive _ _ hR
+      intro Y f hf
+      apply hT
+    · ext Y g
+      refine ⟨?_, ?_⟩
+      · rintro ⟨Z, u, v, ⟨W, o, r, hr, ho, rfl⟩, rfl⟩
+        have := heq (Sieve.le_generate _ _ hr)
+        rw [← Category.assoc]
+        show Sieve.pullback r S (u ≫ o)
+        rw [← this]
+        apply Sieve.downward_closed
+        exact Sieve.le_generate _ _ ho
+      · intro hg
+        simp [Presieve.bind]
+        sorry
 
 /-- A cover of `X` in the pretopology `J` is a `J`-presieve on `X`. This is
 a type synonym for `J X`, but `J.Cover X` is endowed with a different preorder. -/
@@ -314,6 +459,22 @@ lemma hasMultiequalizer_index_of_generate_eq (h : Sieve.generate R.1 = S)
     isLimitMultiFork R S (by rw [← Sieve.generate_le_iff, h]) P _ (limit.isLimit _) gen⟩⟩
 
 end Pretopology
+
+namespace GrothendieckTopology
+
+variable (J : GrothendieckTopology C)
+variable {S T : J.Cover X}
+variable {D : Type*} [Category D] (P : Cᵒᵖ ⥤ D)
+variable (E : Multifork (S.index P)) (hE : IsLimit E)
+
+-- this does not work
+def multifork (hle : S ≤ T) : Multifork (T.index P) := by
+  refine Multifork.ofι _ E.pt ?_ ?_
+  · intro (A : T.Arrow)
+    sorry
+  · sorry
+
+end GrothendieckTopology
 
 /-- Alternative constructor when the def-eq needed for `Presieve.ofArrows.mk` is hard to obtain. -/
 lemma Presieve.ofArrows.mk' {X : C} {ι : Type*} {Y : ι → C} {f : ∀ i, Y i ⟶ X} {Z : C} {g : Z ⟶ X}
