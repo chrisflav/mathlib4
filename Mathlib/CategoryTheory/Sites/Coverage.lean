@@ -68,10 +68,10 @@ def FactorsThruAlong {X Y : C} (S : Presieve Y) (T : Presieve X) (f : Y ⟶ X) :
   ∀ ⦃Z : C⦄ ⦃g : Z ⟶ Y⦄, S g →
   ∃ (W : C) (i : Z ⟶ W) (e : W ⟶ X), T e ∧ i ≫ e = g ≫ f
 
-lemma FactorsThruAlong.pullbackArrows [HasPullbacks C] {X Y : C} (f : X ⟶ Y)
-    (R : Presieve Y) :
+lemma FactorsThruAlong.pullbackArrows {X Y : C} (f : X ⟶ Y) (R : Presieve Y) [R.HasPullback f] :
     (Presieve.pullbackArrows f R).FactorsThruAlong R f := by
   intro Z g ⟨W, b, hb⟩
+  have : HasPullback b f := HasPullback.hasPullback hb
   refine ⟨_, pullback.fst _ _, b, hb, pullback.condition⟩
 
 /--

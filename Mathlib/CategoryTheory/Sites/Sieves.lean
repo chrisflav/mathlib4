@@ -127,13 +127,28 @@ theorem singleton_eq_iff_domain (f g : Y ⟶ X) : singleton f g ↔ f = g := by
 theorem singleton_self : singleton f f :=
   singleton.mk
 
+/-- A presieve `R` has a pullback along `f` if for every `h` in `R`, the pullback
+with `f` exists. -/
+protected class HasPullback (R : Presieve X) {Y : C} (f : Y ⟶ X) : Prop where
+  hasPullback {Z : C} {h : Z ⟶ X} : R h → Limits.HasPullback h f
+
+instance [HasPullbacks C] (R : Presieve X) {Y : C} (f : Y ⟶ X) : R.HasPullback f where
+  hasPullback _ := inferInstance
+
+instance (g : Z ⟶ X) [HasPullback g f] : (singleton g).HasPullback f where
+  hasPullback {Z} h := by
+    intro ⟨⟩
+    infer_instance
+
 /-- Pullback a set of arrows with given codomain along a fixed map, by taking the pullback in the
 category.
 This is not the same as the arrow set of `Sieve.pullback`, but there is a relation between them
 in `pullbackArrows_comm`.
 -/
-inductive pullbackArrows [HasPullbacks C] (R : Presieve X) : Presieve Y
-  | mk (Z : C) (h : Z ⟶ X) : R h → pullbackArrows _ (pullback.snd h f)
+inductive pullbackArrows (R : Presieve X) [R.HasPullback f] : Presieve Y
+  | mk (Z : C) (h : Z ⟶ X) (hh : R h) :
+    haveI : HasPullback h f := HasPullback.hasPullback (f := f) hh
+    pullbackArrows _ (pullback.snd h f)
 
 theorem pullback_singleton [HasPullbacks C] (g : Z ⟶ X) :
     pullbackArrows f (singleton g) = singleton (pullback.snd g f) := by
@@ -212,12 +227,12 @@ theorem functorPullback_id (R : Presieve X) : R.functorPullback (𝟭 _) = R :=
 `g` in `R`, the pullback of `f` and `g` exists. -/
 class hasPullbacks (R : Presieve X) : Prop where
   /-- For all arrows `f` and `g` in `R`, the pullback of `f` and `g` exists. -/
-  has_pullbacks : ∀ {Y Z} {f : Y ⟶ X} (_ : R f) {g : Z ⟶ X} (_ : R g), HasPullback f g
+  has_pullbacks : ∀ {Y Z} {f : Y ⟶ X} (_ : R f) {g : Z ⟶ X} (_ : R g), Limits.HasPullback f g
 
 instance (R : Presieve X) [HasPullbacks C] : R.hasPullbacks := ⟨fun _ _ ↦ inferInstance⟩
 
 instance {α : Type v₂} {X : α → C} {B : C} (π : (a : α) → X a ⟶ B)
-    [(Presieve.ofArrows X π).hasPullbacks] (a b : α) : HasPullback (π a) (π b) :=
+    [(Presieve.ofArrows X π).hasPullbacks] (a b : α) : Limits.HasPullback (π a) (π b) :=
   Presieve.hasPullbacks.has_pullbacks (Presieve.ofArrows.mk _) (Presieve.ofArrows.mk _)
 
 section FunctorPushforward
