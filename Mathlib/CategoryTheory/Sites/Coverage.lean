@@ -345,9 +345,56 @@ class IsStableUnderComposition (J : Coverage C) : Prop where
     (g : ∀ i j, Y i j ⟶ X i) (hg : ∀ i, Presieve.ofArrows (Y i) (g i) ∈ J (X i)) :
     .ofArrows (fun p : Σ i, σ i ↦ Y _ p.2) (fun _ ↦ g _ _ ≫ f _) ∈ J S
 
+class HasIsos (J : Coverage C) : Prop where
+  mem_covering_of_isIso {S T : C} (f : S ⟶ T) [IsIso f] : .singleton f ∈ J T
+
 alias mem_covering_of_isPullback := IsStableUnderBaseChange.mem_covering_of_isPullback
 
 alias mem_covering_comp := IsStableUnderComposition.mem_covering_comp
+
+alias mem_covering_of_isIso := HasIsos.mem_covering_of_isIso
+
+-- TODO: move me
+lemma _root_.CategoryTheory.Presieve.exists_eq_ofArrows {C : Type w} [Category.{w'} C] {X : C}
+    (R : Presieve X) :
+    ∃ (ι : Type (max w w')) (Y : ι → C) (f : ∀ i, Y i ⟶ X), R = .ofArrows Y f := by
+  let ι := { x : Σ Z, (Z ⟶ X) // R x.2 }
+  use ι, fun x ↦ x.1.1, fun x ↦ x.1.2
+  refine le_antisymm ?_ ?_
+  · intro Z g hg
+    exact Presieve.ofArrows.mk (⟨⟨_, _⟩, hg⟩ : ι)
+  · intro Z g ⟨x⟩
+    exact x.2
+
+def toPretopology [HasPullbacks C] (J : Coverage C) [HasIsos J] [J.IsStableUnderBaseChange]
+    [J.IsStableUnderComposition] :
+    Pretopology C where
+  coverings := J.covering
+  has_isos X Y f hf := mem_covering_of_isIso f
+  pullbacks X Y f R hR := by
+    obtain ⟨ι, Z, g, rfl⟩ := R.exists_eq_ofArrows
+    rw [← Presieve.ofArrows_pullback]
+    exact mem_covering_of_isPullback _ hR _ _ _ fun i ↦ (IsPullback.of_hasPullback _ _).flip
+  transitive X R Ti hR hTi := by
+    obtain ⟨ι, Z, g, rfl⟩ := R.exists_eq_ofArrows
+    choose κ W p hp using fun ⦃Y⦄ (f : Y ⟶ X) hf ↦ (Ti f hf).exists_eq_ofArrows
+    have : (Presieve.ofArrows Z g).bind Ti =
+        .ofArrows (fun ij : Σ i, κ (g i) ⟨i⟩ ↦ W _ _ ij.2) (fun ij ↦ p _ _ ij.2 ≫ g ij.1) := by
+      apply le_antisymm
+      · rintro T u ⟨S, v, w, ⟨i⟩, hv, rfl⟩
+        rw [hp] at hv
+        obtain ⟨j⟩ := hv
+        exact .mk <| Sigma.mk (β := fun i : ι ↦ κ (g i) ⟨i⟩) i j
+      · rintro T u ⟨ij⟩
+        use Z ij.1, p (g ij.1) ⟨ij.1⟩ ij.2, g ij.1, ⟨ij.1⟩
+        rw [hp]
+        exact ⟨⟨_⟩, rfl⟩
+    rw [this]
+    apply J.mem_covering_comp (Y := fun (i : ι) (j : κ (g i) ⟨i⟩) ↦ W _ _ j)
+      (g := fun i j ↦ p _ _ j) _ hR
+    intro i
+    rw [← hp]
+    apply hTi
 
 end Coverage
 
