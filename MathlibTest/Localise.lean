@@ -1,7 +1,7 @@
 import Mathlib
 import Mathlib.Tactic.Localise
 
-universe u
+universe v u
 
 --attribute [aesop apply unsafe (rule_sets := [Localise])] AlgebraicGeometry.IsLocalAtTarget.of_openCover
 
@@ -319,6 +319,7 @@ structure GraphData (goal : MVarId) where
   homs : Std.HashMap (FromList objs × FromList objs) (List FVarId)
   homsMap : Std.DHashMap ((FromList objs × FromList objs) × FVarId)
     (fun p => FromList (homs.getD p.1 []))
+  homs' : FromList objs → FromList objs → List FVarId
   --homObjs : Std.HashMap FVarId (FromList objs × FromList objs)
   -- homMap : Std.DHashMap FVarId (fun id ↦ homObjs.getD _)
 
@@ -380,7 +381,8 @@ def constructGraphData (goal : MVarId) : TacticM (GraphData goal) := do
     for i in List.finRange l.length do
       let fvar := l[i]
       homsMap := homsMap.insert (p, fvar) ⟨⟨i, sorry⟩⟩
-  return ⟨objs, idx, outward, inward, homs, homsMap⟩
+  let homs' (i j : FromList objs) : List FVarId := homs.getD (i, j) []
+  return ⟨objs, idx, outward, inward, homs, homsMap, homs'⟩
 
 def GraphData.objsE {goal : MVarId} (g : GraphData goal) : MetaM Q(List Scheme.{0}) :=
   letI X (fvar : FVarId) : Q(Scheme.{0}) := .fvar fvar
@@ -406,19 +408,107 @@ def GraphData.homsE {goal : MVarId} (g : GraphData goal) : MetaM Expr := do
         #[expr, p, mkListEx 0 ty (hs.map (.fvar ·))]
   return homsE
 
+--def Lean.Expr.get
+
+--def FromList.mkExprQ {u v : Level} {α : Q(Type u)} {β : Q(Type v)}
+--    {l : Q(List $α)} (elems : FromList $l → 
+
+@[inline]
+abbrev FromList.ofFinFun {α β : Type*} {l : List α} (f : Fin l.length → β) : FromList l → β :=
+  fun i ↦ f i.obj
+
+--#check toExpr
+--def FromList.mkExpr {α : Type u} {β : Type v} [ToLevel.{u}] [ToLevel.{v}]
+--      [ToExpr α] [ToExpr β] (l : List α) : ToExpr (FromList l → β) :=
+--  have lu := toLevel.{u}
+--  have lv := toLevel.{v}
+--  have eα : Q(Type $lu) := toTypeExpr α
+--  have eβ : Q(Type $lv) := toTypeExpr β
+--  let el : Q(List $eα) := toExpr l
+--  let toTypeExpr := q(FromList $el → $eβ)
+--  { toTypeExpr,
+--    toExpr v :=
+--      let v' : Fin l.length → β := fun i ↦ v (FromList.mk i)
+--      --let en : Q(Nat) := q($(List.length l))
+--      let expr : Q(Fin (List.length $el) → $eβ) := toExpr v'
+--      --let expr' : Q(FromList $el → $eβ) :=
+--      --  q(fun i ↦ _)
+--      q(FromList.ofFinFun $expr)
+--    }
+
+def GraphData.homsE' {goal : MVarId} (g : GraphData goal) : MetaM Expr := do
+  let objsE : Q(List Scheme.{0}) ← g.objsE
+  let J₀ : Q(Type) := q(FromList $objsE)
+  let f := g.homs'
+  --let expr :
+  --    Q((i : FromList $objsE) → (j : FromList $objsE) → List ($objsE[i.obj] ⟶ $objsE[j.obj])) :=
+  --  q(fun i j ↦ _)
+  withLocalDecl `i BinderInfo.default J₀ fun i => do
+    withLocalDecl `j BinderInfo.default J₀ fun j => do
+      let body : Expr ← do
+        logInfo s!"{i.isFVar} {j.isFVar}"
+        --mkListEx 0 q(Nat) []
+        /- This does not work, because `i` and `j` are free variables here. -/
+        match i, j with
+        | Expr.app
+            (.app (.app (.const ``FromList.mk [0]) _) (.app _ _))
+            (.app (.app (.app (.const ``Fin.mk []) _) (.lit <| .natVal n1)) pf1),
+          Expr.app
+            (.app (.app (.const ``FromList.mk [0]) _) (.app _ _))
+            (.app (.app (.app (.const ``Fin.mk []) _) (.lit <| .natVal n2)) pf2) =>
+          --let ty : Expr ← mkAppOptM ``Quiver.Hom #[J₀, instQuiver, i, j]
+          let lhsE : Q(FromList $objsE) := i
+          let rhsE : Q(FromList $objsE) := j
+          --let foo : Q(FromList $objsE → FromList $objsE → List FVarId) := q(g.homs')
+          let arg := g.homs' ⟨n1, sorry⟩ ⟨n2, sorry⟩
+          let ty : Q(Type) ← mkAppM ``Quiver.Hom
+            #[← mkAppM ``List.get #[objsE, lhsE], ← mkAppM ``List.get #[objsE, rhsE]]
+          pure (mkListEx 0 ty (arg.map (.fvar ·)))
+        | _, _ => pure (Expr.bvar 0)
+      --let body : Q(List ()) : Expr := mkListEx 0 _ _
+      -- let lstExpr : Expr := --q((Std.DHashMap.getD $homsE ($i, $j) []))
+      --let f : Q(FromList (Std.DHashMap.getD $homsE ($i, $j) [])) := f
+      --let body ← mkAppM ``List.get #[lstExpr, ← mkAppOptM ``FromList.obj #[none, lstExpr, f]]
+      mkLambdaFVars #[i, j] body
+  --let homsE : Expr
+  --let homsE : Q((i : FromList $objsE) → (j : FromList $objsE)) ←
+  --  g.homs.foldM (init := q(.emptyWithCapacity)) fun expr p hs => do
+  --    let lhsI : Q(Fin (List.length $objsE)) := mkFinEx p.1.obj
+  --    let rhsI : Q(Fin (List.length $objsE)) := mkFinEx p.2.obj
+  --    let p : Q(FromList $objsE × FromList $objsE) := q((⟨$lhsI⟩, ⟨$rhsI⟩))
+  --    let ty ← mkAppM ``Quiver.Hom
+  --      #[← mkAppM ``List.get #[objsE, lhsI], ← mkAppM ``List.get #[objsE, rhsI]]
+  --    mkAppM ``Std.DHashMap.insert
+  --      #[expr, p, mkListEx 0 ty (hs.map (.fvar ·))]
+  --return homsE
+
 def GraphData.quiverE {goal : MVarId} (g : GraphData goal) : MetaM Expr := do
   let objsE : Q(List Scheme.{0}) ← g.objsE
   let J₀ : Q(Type) := q(FromList $objsE)
-  let homsE : Q(Std.DHashMap (FromList $objsE × FromList $objsE)
+  let homsE' : Q(Std.DHashMap (FromList $objsE × FromList $objsE)
       (fun p => List (List.get $objsE p.1.obj ⟶ List.get $objsE p.2.obj))) ← g.homsE
   let instQuiver : Q(Quiver.{1, 0} $J₀) :=
-    q({ Hom i j := FromList (Std.DHashMap.getD $homsE (i, j) []) })
+    q({ Hom i j := FromList (Std.DHashMap.getD $homsE' (i, j) []) })
+  return instQuiver
+
+def GraphData.quiverE' {goal : MVarId} (g : GraphData goal) : MetaM Expr := do
+  let objsE : Q(List Scheme.{0}) ← g.objsE
+  let J₀ : Q(Type) := q(FromList $objsE)
+  let homsE : Q((i : FromList $objsE) → (j : FromList $objsE) →
+      List (List.get $objsE i.obj ⟶ List.get $objsE j.obj)) ← g.homsE'
+  let instQuiver : Q(Quiver.{1, 0} $J₀) := q({ Hom i j := FromList ($homsE i j) })
   return instQuiver
 
 def GraphData.catE {goal : MVarId} (g : GraphData goal) : MetaM Expr := do
   let objsE : Q(List Scheme.{0}) ← g.objsE
   let J₀ : Q(Type) := q(FromList $objsE)
   let instQuiver ← g.quiverE
+  mkAppOptM ``Paths.categoryPaths #[J₀, instQuiver]
+
+def GraphData.catE' {goal : MVarId} (g : GraphData goal) : MetaM Expr := do
+  let objsE : Q(List Scheme.{0}) ← g.objsE
+  let J₀ : Q(Type) := q(FromList $objsE)
+  let instQuiver ← g.quiverE'
   mkAppOptM ``Paths.categoryPaths #[J₀, instQuiver]
 
 def GraphData.functorE {goal : MVarId} (g : GraphData goal) : MetaM Expr := do
@@ -447,6 +537,38 @@ def GraphData.functorE {goal : MVarId} (g : GraphData goal) : MetaM Expr := do
   -- the induced functor from the path category
   mkAppOptM ``Paths.lift #[J₀, instQuiver, none, none, Dp]
 
+def GraphData.functorE' {goal : MVarId} (g : GraphData goal) : MetaM Expr := do
+  let objsE : Q(List Scheme.{0}) ← g.objsE
+  let J₀ : Q(Type) := q(FromList $objsE)
+  let homsE : Q((i : FromList $objsE) → (j : FromList $objsE) →
+      List (List.get $objsE i.obj ⟶ List.get $objsE j.obj)) ← g.homsE'
+  logInfo "constructed homsE"
+  let objFun : Expr ← withLocalDecl `j BinderInfo.default J₀ fun j => do
+    let body ← mkAppM ``List.get #[objsE, ← mkAppM ``FromList.obj #[j]]
+    mkLambdaFVars #[j] body
+  logInfo "constructed objFun"
+  let instQuiver ← g.quiverE'
+  logInfo "constructed quiver"
+  -- construct map part of prefunctor
+  let homFun : Expr ← withLocalDecl `i BinderInfo.implicit J₀ fun i => do
+    withLocalDecl `j BinderInfo.implicit J₀ fun j => do
+      let ty : Expr ← mkAppOptM ``Quiver.Hom #[J₀, instQuiver, i, j]
+      withLocalDecl `f BinderInfo.default ty fun f => do
+        let i : Q(FromList $objsE) := i
+        let j : Q(FromList $objsE) := j
+        let lstExpr : Expr :=
+          q(($homsE $i $j))
+        let f : Q(FromList ($homsE $i $j)) := f
+        let body ← mkAppM ``List.get #[lstExpr, ← mkAppOptM ``FromList.obj #[none, none, f]]
+        logInfo "constructed body"
+        mkLambdaFVars #[i, j, f] body
+  logInfo "constructed homFun"
+  -- the prefunctor obtained from `objFun` and `homFun`
+  let Dp : Expr ← mkAppOptM ``Prefunctor.mk #[J₀, instQuiver, q(Scheme.{0}), none, objFun, homFun]
+  -- the induced functor from the path category
+  mkAppOptM ``Paths.lift #[J₀, instQuiver, none, none, Dp]
+
+/-
 def GraphData.localiseSourceAt {goal : MVarId} (g : GraphData goal)
     (i : FromList g.objs) (fvar : FVarId) :
     GraphData goal where
@@ -456,6 +578,7 @@ def GraphData.localiseSourceAt {goal : MVarId} (g : GraphData goal)
   inward := sorry
   homs := sorry
   homsMap := sorry
+-/
 
 def GraphData.functorObjE {goal : MVarId} {g : GraphData goal} (fvar : FVarId)
     (i : FromList g.objs) : MetaM Expr := do
@@ -533,24 +656,24 @@ elab "constructDiag'" : tactic => do
   let data ← constructGraphData goal
   let objsE : Q(List Scheme.{0}) ← data.objsE
   let J₀ : Q(Type) := q(FromList $objsE)
-  let instQuiver : Q(Quiver.{1, 0} $J₀) ← data.quiverE
-  let D : Expr ← data.functorE
+  --let instQuiver : Q(Quiver.{1, 0} $J₀) ← data.quiverE'
+  --let D : Expr ← data.functorE'
+  let D : Expr ← data.homsE'
   let (fvarD, goal) ← (← goal.define `D (← inferType D) D).intro1P
   -- add the quiver instance to the context (with definition)
-  let (_, goal) ← (← goal.define `instQuiver (← inferType instQuiver) instQuiver).intro1P
+  --let (_, goal) ← (← goal.define `instQuiver (← inferType instQuiver) instQuiver).intro1P
   -- change context to goal with introduced `D
   goal.withContext do
   let data := data.changeMVar goal
-  let sideGoal ← data.diagramifiedGoal fvarD
-  replaceMainGoal [goal, sideGoal]
+  --let sideGoal ← data.diagramifiedGoal fvarD
+  replaceMainGoal [goal]
   --liftMetaTactic fun goal => do
     -- add `D` to the context (with definition)
     --let (_, goal) ← (← goal.define `D (← inferType D) D).intro1P
     ---- add the quiver instance to the context (with definition)
     --let (_, goal) ← (← goal.define `instQuiver (← inferType instQuiver) instQuiver).intro1P
     --let (_, sideGoal) ← (← sideGoal.define `D (← inferType D) D).intro1P
-    ---- add the quiver instance to the context (with definition)
-    --let (_, sideGoal) ← (← sideGoal.define `instQuiver (← inferType instQuiver) instQuiver).intro1P
+    ---- add the quiver instance to the context (with definition) let (_, sideGoal) ← (← sideGoal.define `instQuiver (← inferType instQuiver) instQuiver).intro1P
     --for fvar in data.sourceLocalisable do
       --logInfo s!"localisable on the source at: {← ppExpr (.fvar fvar)}"
       --let i : Expr := sorry
@@ -574,8 +697,10 @@ example {P Q : MorphismProperty Scheme.{0}} [IsLocalAtSource P] [IsLocalAtSource
     {X Y : Scheme.{0}} (f : X ⟶ Y) (hf : P f) :
     Q f := by
   constructDiag'
-  · sorry
-  · sorry
+  let x : FromList [X, Y] := ⟨⟨0, by simp⟩⟩
+  let y : FromList [X, Y] := ⟨⟨1, by simp⟩⟩
+  have : D x y = y := rfl
+  sorry
 
 example {X Y Z : Scheme.{0}} (f : X ⟶ Y) (g : X ⟶ Y) (u : Z ⟶ X) : True := by
   constructDiag'
