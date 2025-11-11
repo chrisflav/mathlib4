@@ -549,18 +549,6 @@ theorem minpoly_powerBasis_gen_of_monic (hf : f.Monic) (hf' : f ≠ 0 := hf.ne_z
     minpoly K (powerBasis hf').gen = f := by
   rw [minpoly_powerBasis_gen hf', hf.leadingCoeff, inv_one, C.map_one, mul_one]
 
-/--
-See `finrank_quotient_span_eq_natDegree'` for a version over a ring when `f` is monic.
--/
-theorem _root_.finrank_quotient_span_eq_natDegree {f : K[X]} :
-    Module.finrank K (K[X] ⧸ Ideal.span {f}) = f.natDegree := by
-  by_cases hf : f = 0
-  · rw [hf, natDegree_zero,
-      ((Submodule.quotEquivOfEqBot _ (by simp)).restrictScalars K).finrank_eq]
-    exact finrank_of_not_finite Polynomial.not_finite
-  rw [PowerBasis.finrank]
-  exact AdjoinRoot.powerBasis_dim hf
-
 end PowerBasis
 
 section Equiv
@@ -790,6 +778,55 @@ theorem quotEquivQuotMap_symm_apply_mk (f g : R[X]) (I : Ideal R) :
         Ideal.Quotient.mk (Ideal.map (of f) I) (AdjoinRoot.mk f g) := by
   rw [AdjoinRoot.quotEquivQuotMap_symm_apply,
     AdjoinRoot.quotAdjoinRootEquivQuotPolynomialQuot_symm_mk_mk]
+
+end
+
+section
+
+noncomputable local instance {S : Type*} [CommRing S] (I : Ideal S) (g : S[X]) :
+    Algebra (S ⧸ I) (S[X] ⧸ Ideal.map Polynomial.C I ⊔ Ideal.span {g}) :=
+  letI f : (S ⧸ I) →ₐ[S] (S[X] ⧸ Ideal.map Polynomial.C I ⊔ Ideal.span {g}) :=
+    Ideal.Quotient.liftₐ _ (Algebra.ofId _ _) fun a ha ↦ by
+      rw [Algebra.ofId_apply, IsScalarTower.algebraMap_apply S S[X],
+        Ideal.Quotient.algebraMap_eq, Polynomial.algebraMap_eq, Ideal.Quotient.eq_zero_iff_mem]
+      exact Ideal.mem_sup_left (Ideal.mem_map_of_mem Polynomial.C ha)
+  f.toAlgebra
+
+instance {S : Type*} [CommRing S] (I : Ideal S) (g : S[X]) :
+    IsScalarTower S (S ⧸ I) (S[X] ⧸ Ideal.map Polynomial.C I ⊔ Ideal.span {g}) :=
+  .of_algHom _
+
+@[simp]
+lemma Polynomial.aeval_quotientMk_X {R S : Type*} [CommRing R] [CommRing S] [Algebra R S]
+    (g : R[X]) (I : Ideal S[X]) :
+    Polynomial.aeval (Ideal.Quotient.mk I Polynomial.X) g =
+      Ideal.Quotient.mk I (Polynomial.map (algebraMap R S) g) := by
+  simp [← Ideal.Quotient.algebraMap_eq, aeval_algebraMap_apply, aeval_X_left_of_algebra_apply]
+
+/-- `S ⧸ I` adjoined a root of `g : S[X]` is `S ⧸ I`-equivalent to `S[X] ⧸ (I ⊔ g)`. -/
+noncomputable
+def mapQuotientMkEquiv {S : Type*} [CommRing S] (I : Ideal S) (g : S[X]) :
+    AdjoinRoot (g.map (Ideal.Quotient.mk I)) ≃ₐ[S ⧸ I] S[X] ⧸ (I.map C ⊔ Ideal.span {g}) :=
+  letI u : AdjoinRoot (g.map (Ideal.Quotient.mk I)) →ₐ[S ⧸ I] S[X] ⧸ (I.map C ⊔ Ideal.span {g}) :=
+    AdjoinRoot.liftHom _ (Ideal.Quotient.mk _ .X) <| by
+      simp_rw [← Ideal.Quotient.algebraMap_eq, Polynomial.aeval_map_algebraMap,
+        Ideal.Quotient.algebraMap_eq, Polynomial.aeval_quotientMk_X, Ideal.Quotient.eq_zero_iff_mem,
+        Algebra.algebraMap_self, Polynomial.map_id]
+      exact Ideal.mem_sup_right <| Ideal.subset_span rfl
+  letI v : (S[X] ⧸ (I.map C ⊔ Ideal.span {g})) →ₐ[S ⧸ I] AdjoinRoot (g.map (Ideal.Quotient.mk I)) :=
+    AlgHom.restrictQuotient I <|
+    Ideal.Quotient.liftₐ _ (Polynomial.aeval <| .root _) <| by
+      simp_rw [← RingHom.mem_ker, ← SetLike.le_def, sup_le_iff]
+      refine ⟨?_, ?_⟩
+      · rw [Ideal.map_le_iff_le_comap]
+        intro x hx
+        simp [IsScalarTower.algebraMap_apply S (S ⧸ I), Ideal.Quotient.eq_zero_iff_mem.mpr hx]
+      · simp [Ideal.span_le, Set.singleton_subset_iff]
+  have h1 : v.comp u = AlgHom.id _ _ := AdjoinRoot.algHom_ext (by simp [u, v])
+  have h2 : (u.comp v).restrictScalars S = AlgHom.id S _ :=
+    Ideal.Quotient.algHom_ext _ (by ext; simp [u, v])
+  { __ := u, invFun := v, left_inv x := DFunLike.congr_fun h1 x,
+    right_inv x := DFunLike.congr_fun h2 x }
 
 end
 
