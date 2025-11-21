@@ -61,6 +61,8 @@ lean_lib Mathlib where
 lean_lib Cache
 lean_lib LongestPole
 
+lean_lib Maths
+
 lean_lib MathlibTest where
   globs := #[.submodules `MathlibTest]
 
