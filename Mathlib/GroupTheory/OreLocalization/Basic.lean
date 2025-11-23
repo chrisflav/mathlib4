@@ -202,7 +202,7 @@ theorem lift₂Expand_of {C : Sort*} {P : X → S → X → S → C}
   rfl
 
 @[to_additive]
-private abbrev smul' (r₁ : R) (s₁ : S) (r₂ : X) (s₂ : S) : X[S⁻¹] :=
+private def smul' (r₁ : R) (s₁ : S) (r₂ : X) (s₂ : S) : X[S⁻¹] :=
   oreNum r₁ s₂ • r₂ /ₒ (oreDenom r₁ s₂ * s₁)
 
 @[to_additive]
@@ -230,7 +230,7 @@ private theorem smul'_char (r₁ : R) (r₂ : X) (s₁ s₂ : S) (u : S) (v : R)
 
 /-- The multiplication on the Ore localization of monoids. -/
 @[to_additive]
-private abbrev smul'' (r : R) (s : S) : X[S⁻¹] → X[S⁻¹] :=
+private def smul'' (r : R) (s : S) : X[S⁻¹] → X[S⁻¹] :=
   liftExpand (smul' r s) fun r₁ r₂ s' hs => by
     rcases oreCondition r s' with ⟨r₁', s₁', h₁⟩
     rw [smul'_char _ _ _ _ _ _ h₁]
@@ -253,7 +253,7 @@ private abbrev smul'' (r : R) (s : S) : X[S⁻¹] → X[S⁻¹] :=
 /-- The scalar multiplication on the Ore localization of monoids. -/
 @[to_additive
   /-- the vector addition on the Ore localization of additive monoids. -/]
-protected abbrev smul (y : R[S⁻¹]) (x : X[S⁻¹]) : X[S⁻¹] :=
+protected def smul (y : R[S⁻¹]) (x : X[S⁻¹]) : X[S⁻¹] :=
   liftExpand (smul'' · · x) (fun r₁ r₂ s hs => by
     cases x with | _ x s₂
     change OreLocalization.smul' r₁ s x s₂ = OreLocalization.smul' (r₂ * r₁) ⟨_, hs⟩ x s₂
@@ -384,7 +384,7 @@ protected theorem mul_assoc (x y z : R[S⁻¹]) : x * y * z = x * (y * z) :=
 
 /-- `npow` of `OreLocalization` -/
 @[to_additive /-- `nsmul` of `AddOreLocalization` -/]
-protected abbrev npow : ℕ → R[S⁻¹] → R[S⁻¹] := npowRec
+protected def npow : ℕ → R[S⁻¹] → R[S⁻¹] := npowRec
 
 @[to_additive]
 instance : Monoid R[S⁻¹] where
@@ -449,7 +449,7 @@ def numeratorUnit (s : S) : Units R[S⁻¹] where
 fraction `r /ₒ 1`. -/
 @[to_additive /-- The additive homomorphism from `R` to `AddOreLocalization R S`,
   mapping `r : R` to the difference `r -ₒ 0`. -/]
-abbrev numeratorHom : R →* R[S⁻¹] where
+def numeratorHom : R →* R[S⁻¹] where
   toFun r := r /ₒ 1
   map_one' := by with_unfolding_all rfl
   map_mul' _ _ := mul_div_one.symm

@@ -26,6 +26,8 @@ public import Mathlib.AlgebraicGeometry.PullbackCarrier
 
 -/
 
+set_option profiler true
+
 @[expose] public section
 
 open CategoryTheory Limits MvPolynomial

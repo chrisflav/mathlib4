@@ -112,7 +112,7 @@ lemma nsmul_eq_nsmul (n : ℕ) (x : X[S⁻¹]) :
 
 /-- The ring homomorphism from `R` to `R[S⁻¹]`, mapping `r : R` to the fraction `r /ₒ 1`. -/
 @[simps!]
-abbrev numeratorRingHom : R →+* R[S⁻¹] where
+def numeratorRingHom : R →+* R[S⁻¹] where
   __ := numeratorHom
   map_zero' := by with_unfolding_all exact OreLocalization.zero_def
   map_add' _ _ := add_oreDiv.symm

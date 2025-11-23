@@ -169,23 +169,24 @@ protected def mul {A : Type*} [Semiring A] [Algebra R A] {S : Submonoid R}
     simp only [mul_smul_mul_comm, e₁, e₂])
 
 instance (priority := 900) {A : Type*} [Semiring A] [Algebra R A] {S : Submonoid R} :
-    Monoid (LocalizedModule S A) where
-  __ := inferInstanceAs (One (LocalizedModule S A))
-  mul := LocalizedModule.mul
-  one_mul := by
-    rintro ⟨a, s⟩
-    with_unfolding_all exact mk_eq.mpr ⟨1, by simp only [one_mul, mul_one, one_smul]⟩
-  mul_one := by
-    rintro ⟨a, s⟩
-    with_unfolding_all exact mk_eq.mpr ⟨1, by simp only [mul_one, one_smul, one_mul]⟩
-  mul_assoc := by with_unfolding_all
-    rintro ⟨a₁, s₁⟩ ⟨a₂, s₂⟩ ⟨a₃, s₃⟩
-    apply mk_eq.mpr _
-    use 1
-    simp only [one_mul, smul_smul, ← mul_assoc, mul_right_comm]
+    Monoid (LocalizedModule S A) :=
+  fast_instance%
+  { __ := inferInstanceAs (One (LocalizedModule S A))
+    mul := LocalizedModule.mul
+    one_mul := by
+      rintro ⟨a, s⟩
+      with_unfolding_all exact mk_eq.mpr ⟨1, by simp only [one_mul, mul_one, one_smul]⟩
+    mul_one := by
+      rintro ⟨a, s⟩
+      with_unfolding_all exact mk_eq.mpr ⟨1, by simp only [mul_one, one_smul, one_mul]⟩
+    mul_assoc := by with_unfolding_all
+      rintro ⟨a₁, s₁⟩ ⟨a₂, s₂⟩ ⟨a₃, s₃⟩
+      apply mk_eq.mpr _
+      use 1
+      simp only [one_mul, smul_smul, ← mul_assoc, mul_right_comm] }
 
 example : OreLocalization.instMonoid = LocalizedModule.instMonoid (A := R) (S := S) := by
-  with_reducible_and_instances rfl
+  rfl
 
 /-- A variant of `mk_mul_mk` that is `rfl` but has a stranger multiplication order. -/
 theorem mk_mul_mk' {A : Type*} [Semiring A] [Algebra R A] {a₁ a₂ : A} {s₁ s₂ : S} :
@@ -195,47 +196,51 @@ theorem mk_mul_mk {A : Type*} [Semiring A] [Algebra R A] {a₁ a₂ : A} {s₁ s
     mk a₁ s₁ * mk a₂ s₂ = mk (a₁ * a₂) (s₁ * s₂) := by rw [mk_mul_mk', mul_comm s₁ s₂]
 
 instance (priority := 900) {A : Type*} [Semiring A] [Algebra R A] {S : Submonoid R} :
-    Semiring (LocalizedModule S A) where
-  __ := inferInstanceAs (AddCommMonoid (LocalizedModule S A))
-  __ := inferInstanceAs (Monoid (LocalizedModule S A))
-  left_distrib := by
-    rintro ⟨a₁, s₁⟩ ⟨a₂, s₂⟩ ⟨a₃, s₃⟩
-    change a₁ /ₒ s₁ * (a₂ /ₒ s₂ + a₃ /ₒ s₃) = a₁ /ₒ s₁ * (a₂ /ₒ s₂) + a₁ /ₒ s₁ * (a₃ /ₒ s₃)
-    rw [← mk, ← mk, ← mk, mk_mul_mk, mk_mul_mk, mk_add_mk, mk_mul_mk, mk_add_mk]
-    apply mk_eq.mpr _
-    use 1
-    simp only [← mul_assoc, mul_right_comm, mul_add, mul_smul_comm, smul_add, smul_smul, one_mul]
-  right_distrib := by
-    rintro ⟨a₁, s₁⟩ ⟨a₂, s₂⟩ ⟨a₃, s₃⟩
-    change (a₁ /ₒ s₁ + a₂ /ₒ s₂) * (a₃ /ₒ s₃) = a₁ /ₒ s₁ * (a₃ /ₒ s₃) + a₂ /ₒ s₂ * (a₃ /ₒ s₃)
-    rw [← mk, ← mk, ← mk, mk_mul_mk, mk_mul_mk, mk_add_mk, mk_mul_mk, mk_add_mk]
-    apply mk_eq.mpr _
-    use 1
-    simp only [one_mul, smul_add, add_mul, smul_smul, ← mul_assoc, smul_mul_assoc,
-      mul_right_comm]
-  zero_mul := by with_unfolding_all
-    rintro ⟨a, s⟩
-    exact mk_eq.mpr ⟨1, by simp only [zero_mul, smul_zero]⟩
-  mul_zero := by with_unfolding_all
-    rintro ⟨a, s⟩
-    exact mk_eq.mpr ⟨1, by simp only [mul_zero, smul_zero]⟩
+    Semiring (LocalizedModule S A) :=
+  fast_instance%
+  { __ := inferInstanceAs (AddCommMonoid (LocalizedModule S A))
+    __ := inferInstanceAs (Monoid (LocalizedModule S A))
+    left_distrib := by
+      rintro ⟨a₁, s₁⟩ ⟨a₂, s₂⟩ ⟨a₃, s₃⟩
+      change a₁ /ₒ s₁ * (a₂ /ₒ s₂ + a₃ /ₒ s₃) = a₁ /ₒ s₁ * (a₂ /ₒ s₂) + a₁ /ₒ s₁ * (a₃ /ₒ s₃)
+      rw [← mk, ← mk, ← mk, mk_mul_mk, mk_mul_mk, mk_add_mk, mk_mul_mk, mk_add_mk]
+      apply mk_eq.mpr _
+      use 1
+      simp only [← mul_assoc, mul_right_comm, mul_add, mul_smul_comm, smul_add, smul_smul, one_mul]
+    right_distrib := by
+      rintro ⟨a₁, s₁⟩ ⟨a₂, s₂⟩ ⟨a₃, s₃⟩
+      change (a₁ /ₒ s₁ + a₂ /ₒ s₂) * (a₃ /ₒ s₃) = a₁ /ₒ s₁ * (a₃ /ₒ s₃) + a₂ /ₒ s₂ * (a₃ /ₒ s₃)
+      rw [← mk, ← mk, ← mk, mk_mul_mk, mk_mul_mk, mk_add_mk, mk_mul_mk, mk_add_mk]
+      apply mk_eq.mpr _
+      use 1
+      simp only [one_mul, smul_add, add_mul, smul_smul, ← mul_assoc, smul_mul_assoc,
+        mul_right_comm]
+    zero_mul := by with_unfolding_all
+      rintro ⟨a, s⟩
+      exact mk_eq.mpr ⟨1, by simp only [zero_mul, smul_zero]⟩
+    mul_zero := by with_unfolding_all
+      rintro ⟨a, s⟩
+      exact mk_eq.mpr ⟨1, by simp only [mul_zero, smul_zero]⟩ }
 
 instance (priority := 900) {A : Type*} [CommSemiring A] [Algebra R A] {S : Submonoid R} :
-    CommSemiring (LocalizedModule S A) where
-  __ := inferInstanceAs (Semiring (LocalizedModule S A))
-  mul_comm := by
-    rintro ⟨a₁, s₁⟩ ⟨a₂, s₂⟩
-    exact mk_eq.mpr ⟨1, by simp only [one_smul, mul_comm]⟩
+    CommSemiring (LocalizedModule S A) :=
+  fast_instance%
+  { __ := inferInstanceAs (Semiring (LocalizedModule S A))
+    mul_comm := by
+      rintro ⟨a₁, s₁⟩ ⟨a₂, s₂⟩
+      exact mk_eq.mpr ⟨1, by simp only [one_smul, mul_comm]⟩ }
 
 instance (priority := 900) {A : Type*} [Ring A] [Algebra R A] {S : Submonoid R} :
-    Ring (LocalizedModule S A) where
-  __ := inferInstanceAs (AddCommGroup (LocalizedModule S A))
-  __ := inferInstanceAs (Semiring (LocalizedModule S A))
+    Ring (LocalizedModule S A) :=
+  fast_instance%
+  { __ := inferInstanceAs (AddCommGroup (LocalizedModule S A))
+    __ := inferInstanceAs (Semiring (LocalizedModule S A)) }
 
 instance (priority := 900) {A : Type*} [CommRing A] [Algebra R A] {S : Submonoid R} :
-    CommRing (LocalizedModule S A) where
-  __ := inferInstanceAs (Ring (LocalizedModule S A))
-  __ := inferInstanceAs (CommSemiring (LocalizedModule S A))
+    CommRing (LocalizedModule S A) :=
+  fast_instance%
+  { __ := inferInstanceAs (Ring (LocalizedModule S A))
+    __ := inferInstanceAs (CommSemiring (LocalizedModule S A)) }
 
 example {R : Type*} [CommRing R] {S : Submonoid R} :
     (LocalizedModule.instCommRing : CommRing R[S⁻¹]) = OreLocalization.instCommRing := by
@@ -425,7 +430,7 @@ noncomputable instance (priority := 900) algebra' {A : Type*} [Semiring A] [Alge
     rw [mk_mul_mk, smul'_mk, Algebra.smul_def, one_mul]
 
 example : (algebra' : Algebra R (LocalizedModule S R)) = OreLocalization.instAlgebra := by
-  with_reducible_and_instances rfl
+  rfl
 
 section
 
