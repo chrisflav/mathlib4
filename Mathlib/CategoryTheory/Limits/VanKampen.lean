@@ -11,6 +11,13 @@ public import Mathlib.CategoryTheory.Limits.Shapes.Pullback.CommSq
 public import Mathlib.CategoryTheory.Limits.Shapes.StrictInitial
 public import Mathlib.CategoryTheory.Limits.FunctorCategory.Basic
 public import Mathlib.CategoryTheory.Limits.Constructions.FiniteProductsOfBinaryProducts
+public import Mathlib.CategoryTheory.Comma.Over.Pullback
+public import Mathlib.CategoryTheory.Limits.ConeCategory
+public import Mathlib.CategoryTheory.Limits.Over
+public import Mathlib.CategoryTheory.Limits.Preserves.Over
+public import Mathlib.CategoryTheory.Monoidal.Cartesian.Over
+public import Mathlib.CategoryTheory.Monoidal.Closed.Cartesian
+public import Mathlib.CategoryTheory.Limits.Constructions.Over.Basic
 
 /-!
 
@@ -968,5 +975,174 @@ lemma IsUniversalColimit.isPullback_prod_of_isColimit [HasPullback u v]
     simpa [Cofan.inj, Cofan.IsColimit.desc] using pullback.lift_snd _ _ _
 
 end CoproductsPullback
+
+namespace Limits
+
+noncomputable
+def Cocone.isColimitToOverEquiv {J C : Type*} [Category* J] [Category* C]
+    {F : J ⥤ C} (c : Cocone F) [HasBinaryProducts C] :
+    IsColimit c.toOver ≃ IsColimit c where
+  toFun hc := isColimitOfPreserves (Over.forget c.pt) hc
+  invFun hc := Over.isColimitToOver hc
+  left_inv := by cat_disch
+  right_inv := by cat_disch
+
+lemma isUniversalColimit_iff_isColimit_overPullback
+    {J C : Type*} [Category* J] [Category* C] [HasPullbacks C]
+    [HasBinaryProducts C] (F : J ⥤ C)
+    (c : Cocone F) :
+    IsUniversalColimit c ↔
+      ∀ {X : C} (f : X ⟶ c.pt),
+        Nonempty
+          (IsColimit <| (Over.pullback f).mapCocone <| c.toOver) := by
+  refine ⟨?_, ?_⟩
+  · intro hc X f
+    apply ReflectsColimit.reflects (F := Over.forget _)
+    apply Nonempty.some
+    refine hc _ ?_ ?_ ?_ ?_ ?_
+    · exact ⟨fun j ↦ pullback.fst _ _, by cat_disch⟩
+    · exact pullback.fst _ _
+    · cat_disch
+    · intro i j k
+      apply IsPullback.of_right _ _ (IsPullback.of_hasPullback _ _).flip
+      · simpa using (IsPullback.of_hasPullback _ _).flip
+      · simp
+    · intro j
+      apply IsPullback.of_right _ _ (IsPullback.of_hasPullback _ _).flip
+      · simpa using (IsPullback.of_hasPullback _ _).flip
+      · simp
+  · rintro H F' c' α f h - hp
+    obtain ⟨H⟩ := H f
+    constructor
+    apply c'.isColimitToOverEquiv.toFun
+    refine IsColimit.equivOfNatIsoOfIso ?_ _ _ ?_ H
+    · refine NatIso.ofComponents ?_ ?_
+      · intro j
+        dsimp [Over.pullback]
+        refine Over.isoMk ?_ ?_
+        · exact (hp j).flip.isoPullback.symm
+        · simp
+      · intro i j k
+        ext
+        apply (hp j).hom_ext <;> simp
+    · refine Cocones.ext ?_ ?_
+      · refine Over.isoMk ?_ ?_
+        · exact ((IsPullback.of_id_snd (f := f)).isoPullback ).symm
+        · cat_disch
+      · intro j
+        ext
+        dsimp
+        rw [CategoryTheory.Iso.comp_inv_eq]
+        apply pullback.hom_ext
+        · simpa using congr($(h).app j)
+        · simp
+
+open SemiCartesianMonoidalCategory in
+open CartesianMonoidalCategory in
+attribute [local instance] Over.cartesianMonoidalCategory
+noncomputable
+def pi {C : Type*} [Category C] [HasPullbacks C]
+    {X Y : C} (f : X ⟶ Y) [CartesianClosed (Over Y)] :
+    Over X ⥤ Over Y :=
+  letI F : Over X ⥤ Over Y :=
+    Over.map f ⋙ exp (Over.mk f)
+  letI a :=
+    (CartesianClosed.curry <|
+      SemiCartesianMonoidalCategory.fst (Over.mk f) (Over.mk (𝟙 Y)))
+  letI X' : Over Y := (exp (Over.mk f)).obj (Over.mk f)
+  letI G : Over X' ⥤ Over Y :=
+    Over.pullback a ⋙ Over.forget _
+  letI α : F ⟶ (const (Over X)).obj X' :=
+    { app A := (exp _).map (Over.homMk A.hom)
+      naturality {A B} g := by
+        simp only [comp_obj, const_obj_obj, Functor.comp_map, const_obj_map, Category.comp_id, F]
+        rw [← Functor.map_comp]
+        congr
+        ext
+        simp }
+  Over.lift F α ⋙ G
+
+def piAdj' {C : Type*} [Category C] [HasPullbacks C]
+    {X Y : C} (f : X ⟶ Y) [CartesianClosed (Over Y)] :
+    Over.pullback f ⊣ pi f where
+  unit := by
+    dsimp [pi]
+    sorry
+  counit := sorry
+
+open SemiCartesianMonoidalCategory in
+open CartesianMonoidalCategory in
+attribute [local instance] Over.cartesianMonoidalCategory
+attribute [local instance] Over.cartesianMonoidalCategory
+noncomputable
+def piAdj {C : Type*} [Category C] [HasPullbacks C]
+    {X Y : C} (f : X ⟶ Y) [CartesianClosed (Over Y)] :
+    Over.pullback f ⊣ pi f where
+  --unit := by
+  --  dsimp [pi]
+  --  refine (exp.adjunction <| Over.mk f).unit ≫
+  --    ?_
+  unit.app A := by
+    dsimp [pi]
+    refine pullback.lift ?_ ?_ ?_
+    · exact CartesianClosed.curry (Over.homMk (pullbackSymmetry _ _).hom)
+    · exact Over.homMk A.hom
+    · rw [← CategoryTheory.CartesianClosed.curry_natural_left]
+      apply CartesianClosed.uncurry_injective
+      rw [CartesianClosed.uncurry_natural_right]
+      ext
+      simp
+      rfl
+  unit.naturality A B g := by
+    dsimp [pi]
+    apply pullback.hom_ext
+    · simp only [Category.assoc, limit.lift_π, PullbackCone.mk_pt, PullbackCone.mk_π_app,
+      limit.lift_π_assoc, cospan_left]
+      rw [← CategoryTheory.CartesianClosed.curry_natural_left]
+      apply CartesianClosed.uncurry_injective
+      ext
+      simp only [Over.tensorObj_left, Over.mk_left, id_obj, const_obj_obj, Over.mk_hom,
+        Over.map_obj_left, Over.pullback_obj_left, CartesianClosed.uncurry_curry, Over.comp_left,
+        Over.homMk_left]
+      rw [CategoryTheory.CartesianClosed.uncurry_natural_right]
+      simp only [CartesianClosed.uncurry_curry, Over.comp_left, Over.tensorObj_left, Over.mk_left,
+        id_obj, const_obj_obj, Over.mk_hom, Over.map_obj_left, Over.pullback_obj_left,
+        Over.homMk_left, Over.map_map_left, Over.pullback_map_left]
+      apply pullback.hom_ext
+      · simpa using Over.whiskerLeft_left_snd _
+      · simpa using Over.whiskerLeft_left_fst _
+    · ext
+      simp
+  counit.app A := by
+    let : MonoidalCategoryStruct.tensorObj
+        (Over.mk f)
+        (Over.mk f ⟹ (Over.map f).obj A) ⟶ (Over.map f).obj A :=
+      CartesianClosed.uncurry (𝟙 _)
+    dsimp [pi]
+    refine Over.homMk ?_ ?_
+    · dsimp
+      refine ?_ ≫ this.left
+      dsimp
+      apply pullback.lift (pullback.snd _ _) _ _
+      · refine pullback.fst _ _ ≫ ?_
+        exact (pullback.fst _
+          (CartesianClosed.curry
+          (SemiCartesianMonoidalCategory.fst (Over.mk f)
+          (Over.mk (𝟙 Y))))).left
+      · simp [← pullback.condition]
+    · dsimp
+      unfold this
+      simp
+      sorry
+  counit.naturality :=
+    sorry
+
+attribute [local instance] Over.cartesianMonoidalCategory
+lemma foobar {C : Type*} [Category C] [HasPullbacks C]
+    {X Y : C} (f : X ⟶ Y) [CartesianClosed (Over Y)] :
+    IsLeftAdjoint (Over.pullback f) :=
+  sorry
+
+end Limits
 
 end CategoryTheory
