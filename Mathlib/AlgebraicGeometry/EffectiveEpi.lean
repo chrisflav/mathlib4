@@ -8,6 +8,7 @@ module
 public import Mathlib.Algebra.Category.Ring.EqualizerPushout
 public import Mathlib.AlgebraicGeometry.Morphisms.Flat
 public import Mathlib.Topology.Category.TopCat.EffectiveEpi
+public import Mathlib.CategoryTheory.EffectiveEpi.Preserves
 
 /-!
 # Effective epimorphisms in the category of schemes
@@ -52,13 +53,8 @@ variable {X Y : AffineScheme.{u}} (f : X ⟶ Y) [Flat f.hom] [Surjective f.hom]
 
 /-- A flat surjective morphism is an effective epimorphism in the category of affine schemes. -/
 lemma AffineScheme.effectiveEpiOfFlatOfSurjective : EffectiveEpi f := by
-  apply effectiveEpi_of_kernelPair f
-  apply isColimitOfReflects AffineScheme.equivCommRingCat.functor
-  apply (isColimitMapCoconeCoforkEquiv _ _).symm ?_
-  apply Cofork.isColimitOfIsos (Cofork.ofπ _ pullback.condition) ?_ _
-    (PreservesPullback.iso _ f f).symm (.refl _) (.refl _) (by simp) (by simp) (by simp)
-  apply CommRingCat.Opposite.isColimitOfπPullbackOfFaithfullyFlat _
-  simp only [AffineScheme.equivCommRingCat_functor_map]
+  apply AffineScheme.equivCommRingCat.functor.effectiveEpi_of_map
+  apply CommRingCat.Opposite.effectiveEpi_of_faithfullyFlat
   exact (Flat.flat_and_surjective_iff_faithfullyFlat_of_isAffine f.hom).mp ⟨‹_›, ‹_›⟩
 
 end AffineScheme
@@ -99,6 +95,49 @@ private lemma base_factorization_type {X Y : Scheme.{u}} {f : X ⟶ Y} [Surjecti
     (Scheme.pullbackComparison_forget_surjective _ _)).left_cancellation
   simp only [← Category.assoc, pullbackComparison_comp_fst, ← Functor.map_comp, h,
     pullbackComparison_comp_snd]
+
+instance effectiveEpi_base_of_flat {X Y : Scheme.{u}} {f : X ⟶ Y} [Flat f] [Surjective f]
+    [QuasiCompact f] : EffectiveEpi f.base := by
+  rw [TopCat.effectiveEpi_iff_isQuotientMap]
+  exact Flat.isQuotientMap_of_surjective _
+
+lemma _root_.CategoryTheory.Limits.pullbackComparison_comp {C D E : Type*} [Category* C]
+    [Category* D] [Category* E]
+    (F : C ⥤ D) (G : D ⥤ E) {X Y S : C} (f : X ⟶ S) (g : Y ⟶ S) [HasPullback f g]
+    [HasPullback (F.map f) (F.map g)] [HasPullback (G.map (F.map f)) (G.map (F.map g))]
+    [HasPullback ((F ⋙ G).map f) ((F ⋙ G).map g)] :
+    pullbackComparison (F ⋙ G) f g = G.map (pullbackComparison F f g) ≫
+      pullbackComparison G (F.map f) (F.map g) := by
+  ext
+  · rw [pullbackComparison_comp_fst]
+    simp [← Functor.map_comp]
+  · rw [pullbackComparison_comp_snd]
+    simp [← Functor.map_comp]
+
+instance {X Y S : Scheme.{u}} (f : X ⟶ S) (g : Y ⟶ S) :
+    Epi (pullbackComparison Scheme.forgetToTop f g) := by
+  let e := (pullbackComparison (forget TopCat) (forgetToTop.map f) (forgetToTop.map g))
+  refine (forget TopCat).epi_of_epi_map ?_
+  rw [← CategoryTheory.epi_comp_iff_of_isIso _
+    (pullbackComparison (forget TopCat) (forgetToTop.map f) (forgetToTop.map g)),
+    ← _root_.CategoryTheory.Limits.pullbackComparison_comp, epi_iff_surjective]
+  apply Scheme.pullbackComparison_forget_surjective _ _
+
+lemma _root_.CategoryTheory.IsRegularEpi.exists_of_isKernelPair {C : Type*} [Category* C]
+    {X Y : C} (π : X ⟶ Y) [IsRegularEpi π] {Z : C} {fst snd : Z ⟶ X} (h : IsKernelPair π fst snd)
+    {W : C} (f : X ⟶ W) (w : fst ≫ f = snd ≫ f) :
+    ∃ (g : Y ⟶ W), π ≫ g = f := by
+  let hc := (isColimitCoforkOfEffectiveEpi _ (PullbackCone.mk fst snd h.w) h.2.some)
+  exact ⟨hc.desc (Cofork.ofπ f w), Cofork.IsColimit.π_desc hc⟩
+
+private lemma base_factorization' {X Y : Scheme.{u}} {f : X ⟶ Y} [Flat f] [Surjective f]
+    [QuasiCompact f] {W : Scheme.{u}} {e : X ⟶ W}
+    (h : pullback.fst f f ≫ e = pullback.snd f f ≫ e) :
+    ∃ (g : Y.carrier ⟶ W.carrier), f.base ≫ g = e.base := by
+  apply IsRegularEpi.exists_of_isKernelPair _ (IsPullback.of_hasPullback _ _)
+  have := congr(Scheme.forgetToTop.map $h)
+  rwa [Functor.map_comp, Functor.map_comp, ← pullbackComparison_comp_fst_assoc,
+    ← pullbackComparison_comp_snd_assoc, cancel_epi] at this
 
 /-- For a flat surjective and quasi-compact morphism `f : X ⟶ Y` of schemes,
 any morphism `e : X ⟶ W` of schemes satisfying `pullback.fst f f ≫ e = pullback.snd f f ≫ e`
@@ -165,6 +204,105 @@ private lemma exists_basicOpen_preimage_opens {X Y : Scheme.{u}} [IsAffine X]
   ⟨this.left.choose,
     ⟨this.left.choose_spec.symm ▸ this.right.left, this.left.choose_spec.symm ▸ this.right.right⟩⟩
 
+lemma of_isAffine_target {X Y S : Scheme.{u}} [IsAffine X] [IsAffine Y] (π : X ⟶ Y)
+    [Surjective π] [Flat π]
+    (f : X ⟶ S) (hg : pullback.fst π π ≫ f = pullback.snd π π ≫ f)
+    [IsAffine S] :
+    ∃ u : Y ⟶ S, π ≫ u = f := by
+  have : EffectiveEpi (AffineScheme.ofHom π) := by
+    apply AffineScheme.equivCommRingCat.functor.effectiveEpi_of_map
+    apply CommRingCat.Opposite.effectiveEpi_of_faithfullyFlat
+    exact (Flat.flat_and_surjective_iff_faithfullyFlat_of_isAffine π).mp ⟨‹_›, ‹_›⟩
+  obtain ⟨u, hu⟩ := CategoryTheory.IsRegularEpi.exists_of_isKernelPair
+    (AffineScheme.ofHom π)
+    (IsPullback.of_map (f := AffineScheme.ofHom (pullback.fst π π)) (AffineScheme.forgetToScheme)
+      (InducedCategory.Hom.ext pullback.condition) (.of_hasPullback _ _))
+    (AffineScheme.ofHom f) (InducedCategory.Hom.ext hg)
+  use u.hom, InducedCategory.Hom.ext_iff.mp hu
+
+open pullback in
+lemma exists_openCover_exists {X Y S : Scheme.{u}} [IsAffine X] [IsAffine Y] (π : X ⟶ Y)
+    [Surjective π] [Flat π]
+    (f : X ⟶ S) (hg : pullback.fst π π ≫ f = pullback.snd π π ≫ f) :
+    ∃ (𝒰 : OpenCover.{u} Y),
+      ∀ i : 𝒰.I₀, ∃ (u : 𝒰.X i ⟶ S), pullback.fst π (𝒰.f i) ≫ f = pullback.snd _ _ ≫ u := by
+  obtain ⟨b, hfac, _⟩ := base_factorization hg
+  let 𝒰 := Y.openCoverOfIsOpenCover _ <| Y.isBasis_affineOpens.isOpenCover_mem_and_le
+    (S.isBasis_affineOpens.isOpenCover.comap b.hom)
+  refine ⟨𝒰, fun i ↦ ?_⟩
+  have : IsAffine (𝒰.X i) := i.2.1
+  let f' : pullback π (𝒰.f i) ⟶ i.1.2.1 := by
+    refine IsOpenImmersion.lift (Scheme.Opens.ι i.1.2.1) (pullback.fst _ _ ≫ f) ?_
+    dsimp
+    rw [← hfac, ← TopCat.coe_comp, ← Scheme.Hom.comp_base_assoc, pullback.condition]
+    simp only [Hom.comp_base, TopCat.hom_comp, ContinuousMap.coe_comp, Set.range_comp,
+      range_eq_univ, Set.image_univ, Opens.range_ι, Set.image_subset_iff]
+    exact le_trans (by simp [𝒰]) i.2.2
+  have h1 : fst (snd π (𝒰.f i)) _ ≫ fst _ _ = map _ _ _ _ (fst _ _) (fst _ _) _
+    condition.symm condition.symm ≫ fst π π := by simp
+  have h2 : snd (snd π (𝒰.f i)) _ ≫ fst _ _ = map _ _ _ _ (fst _ _) (fst _ _) _
+    condition.symm condition.symm ≫ snd π π := by simp
+  obtain ⟨u, hu⟩ := of_isAffine_target (pullback.snd π (𝒰.f i)) f' <| by
+    simp only [← cancel_mono (Scheme.Opens.ι i.1.2.1),
+      Category.assoc, IsOpenImmersion.lift_fac, f', reassoc_of% h1, reassoc_of% h2, hg]
+  refine ⟨u ≫ Scheme.Opens.ι _, ?_⟩
+  simp [reassoc_of% hu, f']
+
+lemma _root_.CategoryTheory.IsRegularEpi.of_epi_of_exists {C : Type*} [Category* C]
+    {X Y : C} {π : X ⟶ Y} [HasPullback π π] [Epi π]
+    (h : ∀ ⦃Z : C⦄ ⦃f : X ⟶ Z⦄, pullback.fst π π ≫ f = pullback.snd π π ≫ f →
+      ∃ (g : Y ⟶ Z), π ≫ g = f) :
+    IsRegularEpi π := by
+  refine ⟨⟨regularEpiOfKernelPair _ <| Cofork.IsColimit.mk' _ fun s ↦ ?_⟩⟩
+  choose g hg using h s.condition
+  refine ⟨g, hg, fun hm ↦ ?_⟩
+  rwa [← cancel_epi π, hg]
+
+lemma exists_of_flat {X Y : Scheme.{u}} [IsAffine X] [IsAffine Y] (π : X ⟶ Y)
+    [Surjective π] [Flat π] {Z : Scheme.{u}} (g : X ⟶ Z)
+    (hg : pullback.fst π π ≫ g = pullback.snd π π ≫ g) :
+    ∃ (f : Y ⟶ Z), π ≫ f = g := by
+  obtain ⟨𝒰, h⟩ := exists_openCover_exists π g hg
+  choose u hfac using h
+  refine ⟨𝒰.glueMorphisms u ?_, ?_⟩
+  · intro i j
+    have : Epi (pullback.snd π (pullback.fst (𝒰.f i) (𝒰.f j) ≫ 𝒰.f i)) :=
+      Flat.epi_of_flat_of_surjective _
+    rw [← cancel_epi (pullback.snd π (pullback.fst (𝒰.f i) (𝒰.f j) ≫ 𝒰.f i)),
+      ← cancel_epi (pullback.congrHom rfl pullback.condition.symm).hom]
+    conv_rhs => simp only [pullback.congrHom_hom, limit.lift_π_assoc, PullbackCone.mk_pt,
+      cospan_right, PullbackCone.mk_π_app, Category.comp_id]
+    rw [← pullbackLeftPullbackSndIso_inv_snd_snd, Category.assoc,
+      ← pullbackLeftPullbackSndIso_inv_snd_snd, Category.assoc, ← pullback.condition_assoc,
+      ← hfac i, ← pullback.condition_assoc, ← hfac j]
+    simp
+  · apply Cover.hom_ext (𝒰.pullback₁ π)
+    intro i
+    simp [pullback.condition_assoc, hfac]
+
+lemma isRegularEpi_of_flat {X Y : Scheme.{u}} [IsAffine X] [IsAffine Y] (π : X ⟶ Y)
+    [Surjective π] [Flat π] : IsRegularEpi π := by
+  have : Epi π := Flat.epi_of_flat_of_surjective π
+  refine .of_epi_of_exists fun Z f hg ↦ ?_
+  obtain ⟨𝒰, h⟩ := exists_openCover_exists π f hg
+  choose u hfac using h
+  refine ⟨𝒰.glueMorphisms u ?_, ?_⟩
+  · intro i j
+    have : Epi (pullback.snd π (pullback.fst (𝒰.f i) (𝒰.f j) ≫ 𝒰.f i)) :=
+      Flat.epi_of_flat_of_surjective _
+    rw [← cancel_epi (pullback.snd π (pullback.fst (𝒰.f i) (𝒰.f j) ≫ 𝒰.f i)),
+      ← cancel_epi (pullback.congrHom rfl pullback.condition.symm).hom]
+    conv_rhs => simp only [pullback.congrHom_hom, limit.lift_π_assoc, PullbackCone.mk_pt,
+      cospan_right, PullbackCone.mk_π_app, Category.comp_id]
+    rw [← pullbackLeftPullbackSndIso_inv_snd_snd, Category.assoc,
+      ← pullbackLeftPullbackSndIso_inv_snd_snd, Category.assoc, ← pullback.condition_assoc,
+      ← hfac i, ← pullback.condition_assoc, ← hfac j]
+    simp
+  · apply Cover.hom_ext (𝒰.pullback₁ π)
+    intro i
+    simp [pullback.condition_assoc, hfac]
+
+#exit
 /-- An element in `Γ(Spec R, ⊤) (≅ R)` defining a basic open subset in `Spec R`. -/
 private noncomputable def r (hp : desc p ∈ V) :
     Γ(Spec R, ⊤).carrier :=
