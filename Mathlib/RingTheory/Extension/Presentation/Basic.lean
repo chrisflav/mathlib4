@@ -492,6 +492,63 @@ end
 
 end Construction
 
+section Hom
+
+variable {R' S' ι' σ' : Type*} [CommRing R'] [CommRing S'] [Algebra R' S']
+  (P' : Presentation R' S' ι' σ')
+variable [Algebra R R'] [Algebra S S']
+
+structure Hom extends P.toGenerators.Hom P'.toGenerators where
+  repr (i : σ) : σ' →₀ P'.Ring
+  toAlgHom_relation_eq_linearCombination_repr (i : σ) :
+    toHom.toAlgHom (P.relation i) = Finsupp.linearCombination P'.Ring P'.relation (repr i)
+
+namespace Hom
+
+variable {P P'}
+
+/-- The coefficients of a morphism between presentations. -/
+def coeffs (f : P.Hom P') : Set R' :=
+  (⋃ i : ι, (f.val i).coeffs) ∪ (⋃ i : σ, ⋃ p ∈ (f.repr i).frange, p.coeffs)
+
+lemma coeffs_val_subset_coeffs (f : P.Hom P') (i : ι) :
+    ((f.val i).coeffs : Set R') ⊆ f.coeffs :=
+  subset_trans (Set.subset_iUnion_of_subset i subset_rfl) Set.subset_union_left
+
+lemma coeffs_subset_coeffs_of_mem_frange_repr (f : P.Hom P') (i : σ) {p : MvPolynomial ι' R'}
+    (hp : p ∈ (f.repr i).frange) :
+    (p.coeffs : Set R') ⊆ f.coeffs :=
+  (Set.subset_iUnion_of_subset i (subset_trans (by simp) <| Set.subset_biUnion_of_mem hp)).trans
+    Set.subset_union_right
+
+lemma ker_le_comap_ker (f : P.Hom P') : P.ker ≤ P'.ker.comap f.toAlgHom := by
+  rw [← P.span_range_relation_eq_ker, Ideal.span_le, Set.range_subset_iff]
+  intro i
+  rw [Ideal.coe_comap, Set.mem_preimage, SetLike.mem_coe,
+    f.toAlgHom_relation_eq_linearCombination_repr, ← P'.span_range_relation_eq_ker,
+    Ideal.span, ← Finsupp.range_linearCombination]
+  exact LinearMap.mem_range_self _ _
+
+noncomputable
+def toAlgHomQuotient [Algebra R S'] [IsScalarTower R P'.Ring S'] (f : P.Hom P') :
+    S →ₐ[R] S' := by
+  refine (P'.quotientEquiv.toAlgHom.restrictScalars R).comp <|
+    (Ideal.Quotient.liftₐ _ ((Ideal.Quotient.mkₐ _ _).comp f.toAlgHom)
+        ?_).comp
+      (P.quotientEquiv.symm.toAlgHom.restrictScalars R)
+  simp_rw [← RingHom.mem_ker, ← SetLike.le_def]
+  grw [ker_le_comap_ker f, ← AlgHom.comap_ker]
+  exact Ideal.comap_mono Ideal.mk_ker.ge
+
+end Hom
+
+--def Hom.toAlgHom [Algebra R S'] [IsScalarTower R S S'] : S →ₐ[R] S' :=
+--  AlgHom.comp
+--    _
+--    (P.quotientEquiv.symm.toAlgHom.restrictScalars R)
+
+end Hom
+
 end Presentation
 
 end Algebra

@@ -100,6 +100,7 @@ lemma HasCoeffs.relation_mem_range_map (x : σ) :
   rw [MvPolynomial.mem_range_map_iff_coeffs_subset]
   exact HasCoeffs.coeffs_relation_mem_range R₀ x
 
+variable (P) in
 /-- The `r`-th relation of `P` as a polynomial in `R₀`. This is the (arbitrary) choice of a
 pre-image under the map `R₀[X] → R[X]`. -/
 noncomputable def relationOfHasCoeffs (r : σ) : MvPolynomial ι R₀ :=
@@ -120,6 +121,7 @@ lemma algebraTensorAlgEquiv_symm_relation (r : σ) :
       1 ⊗ₜ P.relationOfHasCoeffs R₀ r := by
   rw [← map_relationOfHasCoeffs R₀, MvPolynomial.algebraTensorAlgEquiv_symm_map]
 
+variable (P) in
 /-- The model of `S` over a `R₀` that contains the coefficients of `P` is `R₀[X]` quotiented by the
 same relations. -/
 abbrev ModelOfHasCoeffs : Type _ :=
@@ -200,5 +202,64 @@ lemma tensorModelOfHasCoeffsEquiv_symm_tmul (x : MvPolynomial ι R₀) :
     (P.tensorModelOfHasCoeffsEquiv R₀).symm (MvPolynomial.aeval P.val x) =
       1 ⊗ₜ[R₀] (Ideal.Quotient.mk _ x) :=
   tensorModelOfHasCoeffsInv_aeval_val _ x
+
+--def foo {η : Type*} (T : η → Type*) [∀ n, CommRing (T n)] [∀ n, Algebra (T n) R]
+--    [∀ n, Algebra (T n) S] [∀ n, IsScalarTower (T n) R S] [Finite ι] [Finite σ]
+--    (h : ⋃ n, Set.range (algebraMap (T n) R) = .univ) :
+--    ∃ n, P.HasCoeffs (T n) :=
+--  sorry
+
+section Functoriality
+
+variable {T α β : Type*} [CommRing T] [Algebra R T] {Q : Presentation R T α β}
+  [Algebra S T]
+
+class Hom.HasCoeffs (f : P.Hom Q) (R₀ : Type*) [CommRing R₀] [Algebra R₀ R] [Algebra R₀ S]
+    [IsScalarTower R₀ R S] : Prop where
+  coeffs_subset_range (f R₀) : f.coeffs ⊆ Set.range (algebraMap R₀ R)
+  --foo : ∃ (rep : β →₀ MvPolynomial α R₀), _
+
+variable (f : P.Hom Q)
+variable (R₀ : Type*) [CommRing R₀] [Algebra R₀ R] [Algebra R₀ S] [IsScalarTower R₀ R S]
+  [f.HasCoeffs R₀]
+
+lemma Hom.coeffs_subset_range : f.coeffs ⊆ Set.range (algebraMap R₀ R) :=
+  Hom.HasCoeffs.coeffs_subset_range f R₀
+
+lemma Hom.HasCoeffs.coeffs_val_subset_range (i : ι) :
+    (MvPolynomial.coeffs (f.val i) : Set _) ⊆ Set.range ⇑(algebraMap R₀ R) :=
+  subset_trans (f.coeffs_val_subset_coeffs i) (f.coeffs_subset_range R₀)
+
+lemma Hom.HasCoeffs.relation_mem_range_map (i : ι) :
+    f.val i ∈ Set.range (MvPolynomial.map (algebraMap R₀ R)) := by
+  rw [MvPolynomial.mem_range_map_iff_coeffs_subset]
+  exact coeffs_val_subset_range _ _ _
+
+noncomputable def Hom.valOfHasCoeffs (i : ι) : MvPolynomial α R₀ :=
+  (HasCoeffs.relation_mem_range_map f R₀ i).choose
+
+noncomputable def Hom.reprOfHasCoeffs (i : σ) : β →₀ MvPolynomial α R₀ :=
+  let f := f
+  sorry
+
+variable [Algebra R₀ T] [IsScalarTower R₀ R T] [P.HasCoeffs R₀] [Q.HasCoeffs R₀]
+
+lemma aeval_valOfHasCoeffs_relationOfHasCoeffs (i : σ) :
+    MvPolynomial.aeval (fun i ↦ f.valOfHasCoeffs R₀ i) (P.relationOfHasCoeffs R₀ i) =
+      Finsupp.linearCombination _ (Q.relationOfHasCoeffs R₀) (f.reprOfHasCoeffs R₀ i) :=
+  sorry
+
+noncomputable
+def foo (f : P.Hom Q) [f.HasCoeffs R₀] : P.ModelOfHasCoeffs R₀ →ₐ[R₀] Q.ModelOfHasCoeffs R₀ := by
+  refine Ideal.Quotient.liftₐ _
+    ((Ideal.Quotient.mkₐ _ _).comp <| MvPolynomial.aeval fun i ↦ f.valOfHasCoeffs R₀ i) ?_
+  simp_rw [← RingHom.mem_ker, ← SetLike.le_def, Ideal.span_le, Set.range_subset_iff]
+  intro i
+  rw [SetLike.mem_coe, ← AlgHom.comap_ker, ← RingHom.ker_coe_toRingHom, Ideal.Quotient.mkₐ_ker,
+    Ideal.mem_comap, aeval_valOfHasCoeffs_relationOfHasCoeffs, Ideal.span,
+    ← Finsupp.range_linearCombination]
+  exact LinearMap.mem_range_self _ _
+
+end Functoriality
 
 end Algebra.Presentation
