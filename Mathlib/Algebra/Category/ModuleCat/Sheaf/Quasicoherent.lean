@@ -10,6 +10,8 @@ public import Mathlib.Algebra.Category.ModuleCat.Sheaf.Abelian
 public import Mathlib.Algebra.Category.ModuleCat.Sheaf.PullbackContinuous
 public import Mathlib.CategoryTheory.FiberedCategory.HomLift
 public import Mathlib.CategoryTheory.Comma.Over.Pullback
+public import Mathlib.CategoryTheory.ComposableArrows.Basic
+public import Mathlib.Algebra.Homology.ExactSequence
 
 /-!
 # Quasicoherent sheaves
@@ -131,6 +133,27 @@ noncomputable def Presentation.of_isIso {M N : SheafOfModules.{u} R} (f : M ⟶ 
     (σ : M.Presentation) : N.Presentation where
   generators := σ.generators.ofEpi f
   relations := σ.relations.ofEpi ((kernelCompMono _ f).symm.trans <| eqToIso (by simp)).hom
+
+@[simps! obj]
+def Presentation.composableArrows {M : SheafOfModules.{u} R} (P : M.Presentation) :
+    ComposableArrows (SheafOfModules R) 2 :=
+  ComposableArrows.mk₂ (P.relations.π ≫ kernel.ι _) P.generators.π
+
+@[simp] lemma Presentation.composableArrows_map_0_1 {M : SheafOfModules.{u} R}
+    (P : M.Presentation) :
+    P.composableArrows.map (homOfLE <| show 0 ≤ 1 by lia) = P.relations.π ≫ kernel.ι _ := by
+  rfl
+
+@[simp] lemma Presentation.composableArrows_map_1_2 {M : SheafOfModules.{u} R}
+    (P : M.Presentation) :
+    P.composableArrows.map (homOfLE <| show 1 ≤ 2 by lia) = P.generators.π := by
+  rfl
+
+set_option backward.isDefEq.respectTransparency false in
+lemma Presentation.exact_composableArrows {M : SheafOfModules.{u} R} (P : M.Presentation) :
+    P.composableArrows.Exact := by
+  refine ComposableArrows.exact₂_mk _ ?_ (ShortComplex.exact_of_g_is_cokernel _ P.isColimit)
+  simp [ComposableArrows.Precomp.obj]
 
 variable {C' : Type u₂} [Category.{v₂} C'] {J' : GrothendieckTopology C'} {S : Sheaf J' RingCat.{u}}
   [HasSheafify J' AddCommGrpCat] [J'.WEqualsLocallyBijective AddCommGrpCat]
