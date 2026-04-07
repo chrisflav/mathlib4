@@ -454,4 +454,31 @@ instance {X : C} (f : Over X) :
     f.iteratedSliceBackward.IsCocontinuous (J.over _) ((J.over _).over _) :=
   inferInstanceAs (f.iteratedSliceEquiv.inverse.IsCocontinuous _ _)
 
+section
+
+universe w v₁ u₁ v₂ u₂
+
+variable {C : Type u₁} {D : Type u₂} [Category.{v₁} C] [Category.{v₂} D] (F : C ⥤ D)
+    (J : GrothendieckTopology C) (K : GrothendieckTopology D) [F.IsContinuous J K]
+
+lemma GrothendieckTopology.W_over_iff {X : C} (F G : (Over X)ᵒᵖ ⥤ Type w) (f : F ⟶ G)
+    [∀ (F : (Over X)ᵒᵖ ⥤ Type w), (Over.forget X).op.HasLeftKanExtension F] :
+    (J.over X).W f ↔ J.W (((Over.forget X).op.lan).map f) :=
+  sorry
+
+lemma foo (X : C) : (Over.post F).IsContinuous (J.over X) (K.over (F.obj X)) := by
+  constructor
+  intro G
+  let x : ((Over X)ᵒᵖ ⥤ Type max u₁ v₁ u₂ v₂) ⥤ _ ⥤ Type (max u₁ v₁ u₂ v₂) := (Over.post F).op.lan
+  refine Presieve.IsSheaf.comp_of_W_map_of_adjunction (K := K.over _) (H := x) (J.over _)
+    ((Over.post F).op.lanAdjunction _) ?_ _ ?_
+  · intro Y S hS
+    rw [GrothendieckTopology.W_over_iff]
+    dsimp only [x]
+    sorry
+  · rw [← isSheaf_iff_isSheaf_of_type]
+    exact G.property
+
+end
+
 end CategoryTheory
