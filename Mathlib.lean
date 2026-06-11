@@ -159,6 +159,7 @@ public import Mathlib.Algebra.Category.ModuleCat.Colimits
 public import Mathlib.Algebra.Category.ModuleCat.Descent
 public import Mathlib.Algebra.Category.ModuleCat.Differentials.Basic
 public import Mathlib.Algebra.Category.ModuleCat.Differentials.Presheaf
+public import Mathlib.Algebra.Category.ModuleCat.Differentials.Sheaf
 public import Mathlib.Algebra.Category.ModuleCat.EnoughInjectives
 public import Mathlib.Algebra.Category.ModuleCat.EpiMono
 public import Mathlib.Algebra.Category.ModuleCat.Ext.Basic
@@ -1385,6 +1386,7 @@ public import Mathlib.AlgebraicGeometry.IdealSheaf.IrreducibleComponent
 public import Mathlib.AlgebraicGeometry.IdealSheaf.Subscheme
 public import Mathlib.AlgebraicGeometry.Limits
 public import Mathlib.AlgebraicGeometry.LimitsOver
+public import Mathlib.AlgebraicGeometry.Modules.Differentials
 public import Mathlib.AlgebraicGeometry.Modules.Presheaf
 public import Mathlib.AlgebraicGeometry.Modules.Sheaf
 public import Mathlib.AlgebraicGeometry.Modules.Tilde

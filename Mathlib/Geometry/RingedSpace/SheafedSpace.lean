@@ -115,6 +115,13 @@ instance is_presheafedSpace_iso {X Y : SheafedSpace C} (f : X ⟶ Y) [IsIso f] :
     IsIso f.hom :=
   SheafedSpace.forgetToPresheafedSpace.map_isIso f
 
+/-- The morphism of sheaves `Y.sheaf ⟶ (pushforward f).obj X.sheaf` induced by
+a morphism of sheafed spaces `f : X ⟶ Y`. -/
+@[simps]
+def sheafMap {X Y : SheafedSpace C} (f : X ⟶ Y) :
+    Y.sheaf ⟶ (TopCat.Sheaf.pushforward _ f.hom.base).obj X.sheaf where
+  hom := f.hom.c
+
 section
 
 attribute [local simp] id comp
