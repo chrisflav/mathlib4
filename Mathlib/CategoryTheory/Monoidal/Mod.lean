@@ -451,6 +451,7 @@ variable (F : C ⥤ C') (G : D ⥤ D') (M : C) [MonObj M]
 
 open MonoidalLeftAction
 
+variable (D') in
 abbrev MonoidalLeftAction.compLeft [F.Monoidal] : MonoidalLeftAction C D' where
   actionObj c d' := F.obj c ⊙ₗ d'
   actionHomLeft {c₁ c₂} f d' := F.map f ⊵ₗ d'
@@ -495,11 +496,28 @@ abbrev MonoidalLeftAction.compLeft [F.Monoidal] : MonoidalLeftAction C D' where
     simp
     sorry
 
-attribute [local instance] CategoryTheory.Functor.monObjObj in
-abbrev asdfasdfasdf [F.LaxMonoidal] (X : D) [ModObj M X] : ModObj (F.obj M) (G.obj X) where
-  smul := sorry
+abbrev asdfasdf [F.LaxMonoidal] (X : D') [MonoidalLeftAction C D'] [ModObj M X] :
+    ModObj (F.obj M) X where
+  smul := sorry ≫ γ[M, X]
   one_smul := sorry
   mul_smul := sorry
+
+-- abbrev asdf [F.Monoidal] :
+--     letI := MonoidalLeftAction.compLeft D' F
+--     G.LeftLinear C :=
+--   letI := MonoidalLeftAction.compLeft D' F
+--   { μₗ c d := sorry
+--     δₗ := sorry
+--     μₗ_comp_δₗ := sorry
+--     δₗ_comp_μₗ := sorry
+--     μₗ_naturality_left := sorry }
+
+-- attribute [local instance] CategoryTheory.Functor.monObjObj in
+-- abbrev asdfasdfasdf [F.Monoidal]
+--     [letI := MonoidalLeftAction.compLeft D' F; G.LeftLinear C]
+--     (X : D) [ModObj M X] : ModObj (F.obj M) (G.obj X) :=
+--   letI := MonoidalLeftAction.compLeft D' F
+--   Functor.modObjObjRight G (F.obj M) X
 
 namespace Mod_
 
