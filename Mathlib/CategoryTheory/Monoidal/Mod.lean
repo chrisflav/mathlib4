@@ -7,6 +7,7 @@ module
 
 public import Mathlib.CategoryTheory.Monoidal.Mon
 public import Mathlib.CategoryTheory.Monoidal.Action.Basic
+public import Mathlib.CategoryTheory.Monoidal.Action.LinearFunctor
 
 /-!
 # The category of module objects over a monoid object.
@@ -413,6 +414,92 @@ def comap {A B : C} [MonObj A] [MonObj B] (f : A ⟶ B) [IsMonHom f] :
 end comap
 
 end Mod
+
+variable {E : Type*} [Category* E] [MonoidalLeftAction C E]
+
+variable (F : D ⥤ E) (M : C) [MonObj M] [F.LaxLeftLinear C]
+
+open Functor.LaxLeftLinear
+
+@[simps]
+abbrev Functor.modObjObjRight (X : D) [ModObj M X] : ModObj M (F.obj X) where
+  smul := μₗ F _ _ ≫ F.map γ[M, X]
+  one_smul := by
+    simp [← Functor.map_comp]
+  mul_smul := by
+    simp [← Functor.map_comp]
+    simp
+
+scoped[CategoryTheory.Obj] attribute [instance] Functor.modObjObjRight
+
+open scoped Obj
+
+instance {X Y : D} (f : X ⟶ Y) [ModObj M X] [ModObj M Y] [IsModHom M f] :
+    IsModHom M (F.map f) where
+  smul_hom := by
+    simp [← Functor.map_comp]
+
+@[simps]
+def Functor.mapMod (M : C) [MonObj M] : Mod D M ⥤ Mod E M where
+  obj X := .mk (F.obj X.X)
+  map f := .mk (F.map f.hom)
+
+variable {C' D' : Type*} [Category* C'] [Category* D']
+  [MonoidalCategory C'] [MonoidalLeftAction C' D']
+
+variable (F : C ⥤ C') (G : D ⥤ D') (M : C) [MonObj M]
+
+open MonoidalLeftAction
+
+abbrev MonoidalLeftAction.compLeft [F.Monoidal] : MonoidalLeftAction C D' where
+  actionObj c d' := F.obj c ⊙ₗ d'
+  actionHomLeft {c₁ c₂} f d' := F.map f ⊵ₗ d'
+  actionHomRight c d'₁ d'₂ f := F.obj c ⊴ₗ f
+  actionHom f g := F.map f ⊙ₗₘ g
+  actionAssocIso c₁ c₂ d' := actionHomLeftIso (Functor.Monoidal.μIso _ _ _).symm _ ≪≫ αₗ _ _ _
+  actionUnitIso d :=
+    actionHomLeftIso (Functor.Monoidal.εIso _).symm _ ≪≫ λₗ _
+  actionHom_def f g := by rw [actionHom_def]
+  actionAssocIso_hom_naturality {c₁ c₂ c₃ c₄ : C} {d₁ d₂ : D'} (f : c₁ ⟶ c₂) (g : c₃ ⟶ c₄)
+      (h : d₁ ⟶ d₂) := by
+    simp only [Iso.trans_hom, actionHomLeftIso_hom, Iso.symm_hom, Functor.Monoidal.μIso_inv,
+      Category.assoc]
+    simp only [← actionAssocIso_hom_naturality, Iso.cancel_iso_hom_right_assoc]
+    rw [Functor.Monoidal.map_tensor]
+    rw [actionHom_def]
+    rw [comp_actionHomLeft]
+    rw [comp_actionHomLeft]
+    simp only [Category.assoc]
+    congr 1
+    rw [actionHom_def]
+    simp only [tensor_actionHomRight]
+    congr 1
+    rw [action_exchange]
+    simp
+    -- simp? [-Functor.LaxMonoidal.μ_natural, -Functor.Monoidal.δ_μ_assoc]
+    -- have : F.map (f ⊗ₘ g) = _ ≫ F.map f ⊗ₘ F.map g ≫ _ := sorry
+    sorry
+  actionUnitIso_hom_naturality := by
+    simp [action_exchange_assoc]
+  whiskerLeft_actionHomLeft := by
+    simp
+    sorry
+  whiskerRight_actionHomLeft := by
+    sorry
+  associator_actionHom := by
+    sorry
+  leftUnitor_actionHom c d' := by
+    simp
+    sorry
+  rightUnitor_actionHom := by
+    simp
+    sorry
+
+attribute [local instance] CategoryTheory.Functor.monObjObj in
+abbrev asdfasdfasdf [F.LaxMonoidal] (X : D) [ModObj M X] : ModObj (F.obj M) (G.obj X) where
+  smul := sorry
+  one_smul := sorry
+  mul_smul := sorry
 
 namespace Mod_
 

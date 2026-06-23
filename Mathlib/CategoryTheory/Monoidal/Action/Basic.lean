@@ -355,6 +355,18 @@ def actionUnitNatIso : actionLeft D (𝟙_ C) ≅ 𝟭 D := NatIso.ofComponents 
 
 end
 
+/-- The action of an isomorphism in `D` on the right. -/
+@[simps]
+def actionHomRightIso (c : C) {d d' : D} (e : d ≅ d') : c ⊙ₗ d ≅ c ⊙ₗ d' where
+  hom := c ⊴ₗ e.hom
+  inv := c ⊴ₗ e.inv
+
+/-- The action of an isomorphism in `C` on the left. -/
+@[simps]
+def actionHomLeftIso {c c' : C} (e : c ≅ c') (d : D) : c ⊙ₗ d ≅ c' ⊙ₗ d where
+  hom := e.hom ⊵ₗ d
+  inv := e.inv ⊵ₗ d
+
 end MonoidalLeftAction
 
 /-- A class that carries the non-Prop data required to define a right action of
