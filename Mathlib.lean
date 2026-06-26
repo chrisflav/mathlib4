@@ -193,6 +193,7 @@ public import Mathlib.Algebra.Category.ModuleCat.Presheaf.Pushforward
 public import Mathlib.Algebra.Category.ModuleCat.Presheaf.PushforwardZeroMonoidal
 public import Mathlib.Algebra.Category.ModuleCat.Presheaf.Sheafification
 public import Mathlib.Algebra.Category.ModuleCat.Presheaf.Sheafify
+public import Mathlib.Algebra.Category.ModuleCat.Presheaf.Subobject
 public import Mathlib.Algebra.Category.ModuleCat.Products
 public import Mathlib.Algebra.Category.ModuleCat.Projective
 public import Mathlib.Algebra.Category.ModuleCat.ProjectiveDimension
@@ -200,6 +201,7 @@ public import Mathlib.Algebra.Category.ModuleCat.Pseudofunctor
 public import Mathlib.Algebra.Category.ModuleCat.Semi
 public import Mathlib.Algebra.Category.ModuleCat.Sheaf
 public import Mathlib.Algebra.Category.ModuleCat.Sheaf.Abelian
+public import Mathlib.Algebra.Category.ModuleCat.Sheaf.Annihilator
 public import Mathlib.Algebra.Category.ModuleCat.Sheaf.ChangeOfRings
 public import Mathlib.Algebra.Category.ModuleCat.Sheaf.Colimits
 public import Mathlib.Algebra.Category.ModuleCat.Sheaf.Free
