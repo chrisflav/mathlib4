@@ -99,28 +99,59 @@ instance : PartialOrder M.Submodule where
   le N₁ N₂ := ∀ X, N₁.toSubmodule X ≤ N₂.toSubmodule X
   le_refl N X := le_rfl
   le_trans N₁ N₂ N₃ h₁ h₂ X := (h₁ X).trans (h₂ X)
-  le_antisymm N₁ N₂ h₁ h₂ := by ext X; exact le_antisymm (h₁ X) (h₂ X)
+  le_antisymm N₁ N₂ h₁ h₂ := ext fun X ↦ le_antisymm (h₁ X) (h₂ X)
 
 lemma le_def {N₁ N₂ : M.Submodule} :
     N₁ ≤ N₂ ↔ ∀ X, N₁.toSubmodule X ≤ N₂.toSubmodule X := Iff.rfl
 
-instance : InfSet M.Submodule where
+/-- The submodules of a presheaf of modules form a complete lattice, with order given by
+pointwise inclusion. All lattice operations are computed pointwise. -/
+@[simps! sup_toSubmodule inf_toSubmodule sSup_toSubmodule sInf_toSubmodule
+  top_toSubmodule bot_toSubmodule]
+instance : CompleteLattice M.Submodule where
+  sup N₁ N₂ :=
+    { toSubmodule X := N₁.toSubmodule X ⊔ N₂.toSubmodule X
+      map_mem := by
+        intro X Y f m hm
+        obtain ⟨a, ha, b, hb, rfl⟩ := _root_.Submodule.mem_sup.mp hm
+        have h := _root_.Submodule.add_mem_sup (N₁.map_mem f ha) (N₂.map_mem f hb)
+        rwa [← map_add] at h }
+  le_sup_left N₁ N₂ X := le_sup_left
+  le_sup_right N₁ N₂ X := le_sup_right
+  sup_le N₁ N₂ N₃ h₁ h₂ X := sup_le (h₁ X) (h₂ X)
+  inf N₁ N₂ :=
+    { toSubmodule X := N₁.toSubmodule X ⊓ N₂.toSubmodule X
+      map_mem _ _ f _ hm := ⟨N₁.map_mem f hm.1, N₂.map_mem f hm.2⟩ }
+  inf_le_left N₁ N₂ X := inf_le_left
+  inf_le_right N₁ N₂ X := inf_le_right
+  le_inf N₁ N₂ N₃ h₁ h₂ X := le_inf (h₁ X) (h₂ X)
+  sSup S :=
+    { toSubmodule X := ⨆ N ∈ S, N.toSubmodule X
+      map_mem := by
+        intro X Y f m hm
+        rw [iSup_subtype'] at hm
+        induction hm using _root_.Submodule.iSup_induction' with
+        | mem N x hx =>
+          exact _root_.Submodule.mem_iSup_of_mem (N : M.Submodule)
+            (_root_.Submodule.mem_iSup_of_mem N.2 ((N : M.Submodule).map_mem f hx))
+        | zero => simpa only [map_zero] using zero_mem (⨆ N ∈ S, N.toSubmodule Y)
+        | add x y _ _ ihx ihy =>
+          have h := add_mem ihx ihy
+          rwa [← map_add] at h }
+  isLUB_sSup S := ⟨fun N hN X ↦ le_iSup₂_of_le N hN le_rfl,
+    fun N hN X ↦ iSup₂_le fun N' hN' ↦ hN hN' X⟩
   sInf S :=
     { toSubmodule X := ⨅ N ∈ S, N.toSubmodule X
       map_mem := by
         intro X Y f m hm
         simp only [_root_.Submodule.mem_iInf] at hm ⊢
         exact fun N hN ↦ N.map_mem f (hm N hN) }
-
-@[simp]
-lemma sInf_toSubmodule (S : Set M.Submodule) (X : Cᵒᵖ) :
-    (sInf S).toSubmodule X = ⨅ N ∈ S, N.toSubmodule X := rfl
-
-instance : CompleteLattice M.Submodule :=
-  completeLatticeOfInf _ fun S ↦ by
-    refine ⟨fun N hN X ↦ ?_, fun N hN X ↦ ?_⟩
-    · simpa only [sInf_toSubmodule] using iInf₂_le N hN
-    · simpa only [sInf_toSubmodule] using le_iInf₂ fun N' hN' ↦ hN hN' X
+  isGLB_sInf S := ⟨fun N hN X ↦ iInf₂_le_of_le N hN le_rfl,
+    fun N hN X ↦ le_iInf₂ fun N' hN' ↦ hN hN' X⟩
+  bot := { toSubmodule _ := ⊥ }
+  bot_le N X := bot_le
+  top := { toSubmodule _ := ⊤ }
+  le_top N X := le_top
 
 end Lattice
 
