@@ -23,6 +23,8 @@ we construct the corresponding subobject of `M` in the category
   presheaf of modules.
 * `PresheafOfModules.Submodule.ι`: the inclusion into `M`, a monomorphism.
 
+The submodules of `M` form a complete lattice, with order given by pointwise inclusion.
+
 -/
 
 @[expose] public section
@@ -38,7 +40,7 @@ variable {C : Type u₁} [Category.{v₁} C] {R : Cᵒᵖ ⥤ RingCat.{u}}
 /-- A family of submodules `N X ≤ M.obj X` of a presheaf of modules `M`, stable
 under the restriction maps of `M`. This is the data needed to cut out a
 subobject of `M` in `PresheafOfModules R`. -/
-structure Submodule (M : PresheafOfModules.{v} R) where
+protected structure Submodule (M : PresheafOfModules.{v} R) where
   /-- the submodule of `M.obj X` -/
   toSubmodule (X : Cᵒᵖ) : _root_.Submodule (R.obj X) (M.obj X)
   /-- the family is stable under restriction -/
@@ -90,6 +92,37 @@ instance : Mono N.ι := mono_of_injective N.ι_app_injective
 lemma mem_iff {X : Cᵒᵖ} (m : M.obj X) :
     (∃ n : N.toSubmodule X, (N.ι).app X n = m) ↔ m ∈ N.toSubmodule X :=
   ⟨fun ⟨n, hn⟩ ↦ hn ▸ n.property, fun hm ↦ ⟨⟨m, hm⟩, rfl⟩⟩
+
+section Lattice
+
+instance : PartialOrder M.Submodule where
+  le N₁ N₂ := ∀ X, N₁.toSubmodule X ≤ N₂.toSubmodule X
+  le_refl N X := le_rfl
+  le_trans N₁ N₂ N₃ h₁ h₂ X := (h₁ X).trans (h₂ X)
+  le_antisymm N₁ N₂ h₁ h₂ := by ext X; exact le_antisymm (h₁ X) (h₂ X)
+
+lemma le_def {N₁ N₂ : M.Submodule} :
+    N₁ ≤ N₂ ↔ ∀ X, N₁.toSubmodule X ≤ N₂.toSubmodule X := Iff.rfl
+
+instance : InfSet M.Submodule where
+  sInf S :=
+    { toSubmodule X := ⨅ N ∈ S, N.toSubmodule X
+      map_mem := by
+        intro X Y f m hm
+        simp only [_root_.Submodule.mem_iInf] at hm ⊢
+        exact fun N hN ↦ N.map_mem f (hm N hN) }
+
+@[simp]
+lemma sInf_toSubmodule (S : Set M.Submodule) (X : Cᵒᵖ) :
+    (sInf S).toSubmodule X = ⨅ N ∈ S, N.toSubmodule X := rfl
+
+instance : CompleteLattice M.Submodule :=
+  completeLatticeOfInf _ fun S ↦ by
+    refine ⟨fun N hN X ↦ ?_, fun N hN X ↦ ?_⟩
+    · simpa only [sInf_toSubmodule] using iInf₂_le N hN
+    · simpa only [sInf_toSubmodule] using le_iInf₂ fun N' hN' ↦ hN hN' X
+
+end Lattice
 
 end Submodule
 
