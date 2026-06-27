@@ -139,7 +139,7 @@ lemma exists_localGeneration_of_epi {ι : Type u} [Fintype ι] {U₀ : Opens X}
   rw [← e1, hc]
   refine Finset.sum_congr rfl fun i _ ↦ ?_
   congr 1
-  exact ((sectionsMap π (freeSection (R := R.over U₀) i)).2
+  exact ((sectionsMap π (freeSection (R := R.over U₀) i)).property
     (Over.homMk (homOfLE (le_trans hWV hVU₀)) : B ⟶ Over.mk (𝟙 U₀)).op).symm
 
 set_option backward.isDefEq.respectTransparency false in

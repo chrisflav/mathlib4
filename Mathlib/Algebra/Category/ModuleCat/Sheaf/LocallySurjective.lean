@@ -70,14 +70,14 @@ noncomputable instance toSheaf_preservesEpimorphisms :
     (toSheaf.{v} R).PreservesEpimorphisms := by
   have adj := PresheafOfModules.sheafificationAdjunction (𝟙 R.obj)
   have : PreservesColimitsOfShape WalkingSpan (toSheaf.{v} R) :=
-    (adj.preservesColimitsOfShape_iff (toSheaf R) WalkingSpan).2 inferInstance
+    (adj.preservesColimitsOfShape_iff (toSheaf R) WalkingSpan).mpr inferInstance
   infer_instance
 
 variable (J) in
 /-- An epimorphism of sheaves of modules is locally surjective on underlying sections. -/
 theorem isLocallySurjective_of_epi {M N : SheafOfModules.{v} R} (f : M ⟶ N) [Epi f] :
     IsLocallySurjective J f :=
-  (Sheaf.isLocallySurjective_iff_epi' (φ := (toSheaf R).map f)).2 inferInstance
+  (Sheaf.isLocallySurjective_iff_epi' (φ := (toSheaf R).map f)).mpr inferInstance
 
 variable (J) in
 /-- A morphism of sheaves of modules is an epimorphism if and only if it is locally surjective
@@ -87,7 +87,7 @@ theorem epi_iff_isLocallySurjective {M N : SheafOfModules.{v} R} (f : M ⟶ N) :
   refine ⟨fun _ ↦ isLocallySurjective_of_epi J f, fun hf ↦ ?_⟩
   have hf' : Sheaf.IsLocallySurjective ((toSheaf R).map f) := hf
   have : Epi ((toSheaf R).map f) :=
-    (Sheaf.isLocallySurjective_iff_epi' (φ := (toSheaf R).map f)).1 hf'
+    (Sheaf.isLocallySurjective_iff_epi' (φ := (toSheaf R).map f)).mp hf'
   exact (toSheaf R).epi_of_epi_map this
 
 end SheafOfModules

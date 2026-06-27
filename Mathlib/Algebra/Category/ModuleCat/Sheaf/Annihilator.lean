@@ -81,7 +81,7 @@ variable {M}
 
 @[simp]
 lemma annihilatorι_app_apply (X : Cᵒᵖ) (r : (M.annihilatorSystem.toSubmodule X)) :
-    M.annihilatorι.app X r = r.1 := rfl
+    M.annihilatorι.app X r = r.val := rfl
 
 /-- The annihilator is antitone with respect to morphisms that are surjective on sections:
 if `f : M ⟶ N` is componentwise surjective, then everything annihilating `M` annihilates `N`. -/
