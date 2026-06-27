@@ -104,42 +104,9 @@ instance instScalarTowerStalk (x : PrimeSpectrum.Top R) :
     IsScalarTower R ((Spec R).presheaf.stalk x) ((tilde M).presheaf.stalk x) :=
   IsScalarTower.of_algebraMap_smul fun _ _ ↦ rfl
 
-/-- The module structure obtained by restricting scalars along the stalk map of the identity
-morphism `𝟙 (Spec R)` agrees with the canonical module structure of the local ring on the
-stalk of `M^~`. -/
-theorem compHom_stalkMap_id_eq (x : PrimeSpectrum.Top R) :
-    Module.compHom ((tilde M).presheaf.stalk x)
-        ((𝟙 (Spec R) : Spec R ⟶ Spec R).stalkMap x).hom = instModuleStalk M x := by
-  rw [Scheme.Hom.stalkMap_id]; rfl
-
-/-- For a prime `x` of `R`, the stalk `(M^~)_x` is flat over the local ring `𝒪_{Spec R, x}` if
-and only if the localization `M_x` is flat over `R`. -/
-theorem stalk_flat_iff (x : PrimeSpectrum.Top R) :
-    Module.Flat ((Spec R).presheaf.stalk x) ((tilde M).presheaf.stalk x) ↔
-      Module.Flat R (LocalizedModule x.asIdeal.primeCompl M) := by
-  rw [Module.flat_iff_of_isLocalization ((Spec R).presheaf.stalk x) x.asIdeal.primeCompl]
-  exact Module.Flat.equiv_iff
-    (IsLocalizedModule.linearEquiv x.asIdeal.primeCompl (tilde.toStalk M x).hom
-      (LocalizedModule.mkLinearMap x.asIdeal.primeCompl M))
-
 end Tilde
 
 namespace Scheme.Modules
-
-/-- **The affine case.** For a commutative ring `R` and an `R`-module `M`, the quasi-coherent
-sheaf `M^~` on `Spec R` is flat over `Spec R` (via the identity morphism) if and only if `M` is a
-flat `R`-module. -/
-theorem flat_tilde_iff {R : CommRingCat.{u}} (M : ModuleCat.{u} R) :
-    Flat (𝟙 (Spec R)) (tilde M) ↔ Module.Flat R M := by
-  rw [Module.flat_iff_forall_localizedModule_prime (R := R) (N := M)]
-  refine ⟨fun h p _ ↦ ?_, fun h ↦ ⟨fun x ↦ ?_⟩⟩
-  · rw [← Tilde.stalk_flat_iff M ⟨p, ‹_›⟩]
-    have key := h.flatAt ⟨p, ‹_›⟩
-    simp only [FlatAt] at key
-    rwa [Tilde.compHom_stalkMap_id_eq] at key
-  · simp only [FlatAt]
-    rw [Tilde.compHom_stalkMap_id_eq M x]
-    exact (Tilde.stalk_flat_iff M x).mpr (h x.asIdeal)
 
 /-! ### Transitivity and base-locality of flatness
 
@@ -244,6 +211,15 @@ theorem flat_tilde_iff_of_algebra {R S : CommRingCat.{u}} (f : R ⟶ S) (M : Mod
     Module.flat_iff_forall_localizedModule_prime_of_algebra (R := R) (S := S) (M := M)]
   refine ⟨fun h q _ ↦ (flatAt_tilde_algebra_iff f M ⟨q, ‹_›⟩).mp (h ⟨q, ‹_›⟩),
     fun h x ↦ (flatAt_tilde_algebra_iff f M x).mpr (h x.asIdeal)⟩
+
+/-- **The affine case.** For a commutative ring `R` and an `R`-module `M`, the quasi-coherent
+sheaf `M^~` on `Spec R` is flat over `Spec R` (via the identity morphism) if and only if `M` is a
+flat `R`-module. This is the special case of `flat_tilde_iff_of_algebra` for the identity ring
+map `𝟙 R`. -/
+theorem flat_tilde_iff {R : CommRingCat.{u}} (M : ModuleCat.{u} R) :
+    Flat (𝟙 (Spec R)) (tilde M) ↔ Module.Flat R M := by
+  rw [← Spec.map_id R]
+  exact flat_tilde_iff_of_algebra (𝟙 R) M
 
 /-! ### Flatness is local on the source (open covers)
 
