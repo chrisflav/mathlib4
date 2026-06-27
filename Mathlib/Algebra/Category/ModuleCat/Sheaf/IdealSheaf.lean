@@ -68,6 +68,18 @@ variable {R}
 def ideal (I : IdealSheaf R) (X : Cᵒᵖ) : Ideal (R.obj.obj X) :=
   I.toSubmoduleSystem.toSubmodule X
 
+@[ext]
+lemma ext {I J : IdealSheaf R} (h : ∀ X, I.ideal X = J.ideal X) : I = J := by
+  obtain ⟨I, _⟩ := I
+  obtain ⟨J, _⟩ := J
+  congr 1
+  exact PresheafOfModules.SubmoduleSystem.ext h
+
+instance : PartialOrder (IdealSheaf R) :=
+  PartialOrder.lift ideal (fun _ _ h ↦ ext (congrFun h))
+
+lemma le_def {I J : IdealSheaf R} : I ≤ J ↔ ∀ X, I.ideal X ≤ J.ideal X := Iff.rfl
+
 /-- The underlying sheaf of modules of an ideal sheaf. -/
 noncomputable def toSheafOfModules (I : IdealSheaf R) : SheafOfModules.{u} R where
   val := I.toSubmoduleSystem.toPresheafOfModules
