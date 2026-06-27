@@ -34,10 +34,10 @@ affine opens produces a family of ideals of `Γ(X, U)`. Conversely, `Scheme.Idea
 records such a family on affine opens together with the localization compatibility
 `map_ideal_basicOpen`. Translating between the two is a *quasi-coherence* statement: a general
 `IdealSheaf` need not be quasi-coherent (its restriction maps need not be localizations), and an
-`IdealSheafData` only constrains affine opens. Building the order isomorphism between
-quasi-coherent ideal sheaves and `IdealSheafData` is the refactor envisaged in
-`AlgebraicGeometry/IdealSheaf/Basic.lean` and is left for future work; this file provides the
-target notion of "actual subsheaf of `𝒪ₓ`" that such a refactor requires.
+`IdealSheafData` only constrains affine opens. The order isomorphism between quasi-coherent ideal
+sheaves and `IdealSheafData` is built in `AlgebraicGeometry/IdealSheaf/Quasicoherent.lean`
+(`AlgebraicGeometry.Scheme.IdealSheafData.orderIsoQuasicoherentIdealSheaf`); this file provides the
+target notion of "actual subsheaf of `𝒪ₓ`" that such a correspondence requires.
 
 -/
 
@@ -102,7 +102,7 @@ variable [J.HasSheafCompose (forget₂ RingCat.{u} AddCommGrpCat.{u})]
 noncomputable def annihilatorIdealSheaf {R : Sheaf J RingCat.{max v₁ u₁}}
     [J.HasSheafCompose (forget₂ RingCat.{max v₁ u₁} AddCommGrpCat.{max v₁ u₁})]
     (M : SheafOfModules.{v} R) : IdealSheaf R where
-  toSubmodule := M.val.annihilatorSystem
+  toSubmodule := M.val.annihilatorSubmodule
   isSheaf := M.annihilator.isSheaf
 
 end SheafOfModules

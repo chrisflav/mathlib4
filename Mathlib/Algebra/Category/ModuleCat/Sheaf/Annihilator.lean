@@ -48,7 +48,6 @@ def annihilatorIdeal (X : Cᵒᵖ) : Ideal (R.obj X) where
 
 variable {M}
 
-@[simp]
 lemma mem_annihilatorIdeal {X : Cᵒᵖ} (r : R.obj X) :
     r ∈ M.annihilatorIdeal X ↔
       ∀ ⦃Y : Cᵒᵖ⦄ (f : X ⟶ Y) (m : M.obj Y), R.map f r • m = 0 :=
@@ -58,7 +57,7 @@ variable (M)
 
 /-- The annihilator of `M`, as a family of submodules of `unit R` stable under
 restriction. -/
-noncomputable def annihilatorSystem : (unit R).Submodule where
+noncomputable def annihilatorSubmodule : (unit R).Submodule where
   toSubmodule X := M.annihilatorIdeal X
   map_mem {X Y} f r hr := by
     refine (mem_annihilatorIdeal _).mpr fun Z g m ↦ ?_
@@ -68,19 +67,19 @@ noncomputable def annihilatorSystem : (unit R).Submodule where
 /-- The annihilator of a presheaf of modules `M`, a sub-presheaf of modules of
 `unit R`. -/
 noncomputable def annihilator : PresheafOfModules.{u} R :=
-  M.annihilatorSystem.toPresheafOfModules
+  M.annihilatorSubmodule.toPresheafOfModules
 
 /-- The inclusion of the annihilator of `M` into `unit R`. -/
 noncomputable def annihilatorι : M.annihilator ⟶ unit R :=
-  M.annihilatorSystem.ι
+  M.annihilatorSubmodule.ι
 
 instance : Mono M.annihilatorι :=
-  inferInstanceAs (Mono M.annihilatorSystem.ι)
+  inferInstanceAs (Mono M.annihilatorSubmodule.ι)
 
 variable {M}
 
 @[simp]
-lemma annihilatorι_app_apply (X : Cᵒᵖ) (r : (M.annihilatorSystem.toSubmodule X)) :
+lemma annihilatorι_app_apply (X : Cᵒᵖ) (r : (M.annihilatorSubmodule.toSubmodule X)) :
     M.annihilatorι.app X r = r.val := rfl
 
 /-- The annihilator is antitone with respect to morphisms that are surjective on sections:
@@ -106,13 +105,49 @@ variable {C : Type u₁} [Category.{v₁} C] {J : GrothendieckTopology C}
 /-- The underlying type-valued presheaf of an `AddCommGrpCat`-valued sheaf is a sheaf of types.
 This holds at any universe `w`, since the forgetful functor of `AddCommGrpCat.{w}` is
 corepresentable (by `ULift.{w} ℤ`); in particular it does not require `w = max v₁ u₁`. -/
-private lemma presieveIsSheaf_comp_forget {A : Cᵒᵖ ⥤ AddCommGrpCat.{w}}
+lemma presieveIsSheaf_comp_forget {A : Cᵒᵖ ⥤ AddCommGrpCat.{w}}
     (h : Presheaf.IsSheaf J A) :
     Presieve.IsSheaf J (A ⋙ CategoryTheory.forget AddCommGrpCat.{w}) :=
   Presieve.isSheaf_iso J (Functor.isoWhiskerLeft A AddCommGrpCat.coyonedaObjIsoForget)
     (h (AddCommGrpCat.of (ULift.{w} ℤ)))
 
-variable
+end SheafOfModules
+
+namespace PresheafOfModules.Submodule
+
+variable {C : Type u₁} [Category.{v₁} C] {J : GrothendieckTopology C} {R : Cᵒᵖ ⥤ RingCat.{u}}
+  {M : PresheafOfModules.{v} R} (N : M.Submodule)
+
+/-- The subfunctor of the type-valued presheaf underlying `M` cut out by the restriction-stable
+family of submodules `N`. -/
+def toSubfunctor : Subfunctor (M.presheaf ⋙ CategoryTheory.forget AddCommGrpCat.{v}) where
+  obj X := { m : M.obj X | m ∈ N.toSubmodule X }
+  map {X Y} f m hm := N.map_mem f hm
+
+/-- **Sheaf condition for a subobject cut out by a family of submodules.**
+If the ambient presheaf of modules `M` is a sheaf and the family `N` is *local* for `J` (a section
+of `M` whose restrictions lie in `N` on some covering sieve already lies in `N`), then the
+associated presheaf of modules `N.toPresheafOfModules` is a sheaf. This is the boilerplate behind
+every concrete ideal/annihilator subsheaf; the only input that varies is `hlocal`. -/
+lemma isSheaf_toPresheafOfModules (hM : Presheaf.IsSheaf J M.presheaf)
+    (hlocal : ∀ ⦃X : Cᵒᵖ⦄ (s : M.obj X),
+      N.toSubfunctor.sieveOfSection s ∈ J X.unop → s ∈ N.toSubmodule X) :
+    Presheaf.IsSheaf J N.toPresheafOfModules.presheaf := by
+  have hF : Presieve.IsSheaf J (M.presheaf ⋙ CategoryTheory.forget AddCommGrpCat.{v}) :=
+    SheafOfModules.presieveIsSheaf_comp_forget hM
+  have hG : Presieve.IsSheaf J N.toSubfunctor.toFunctor :=
+    (N.toSubfunctor.isSheaf_iff hF).mpr fun _ s hs ↦ hlocal s hs
+  rw [Presheaf.isSheaf_iff_isSheaf_forget (J := J)
+      (s := CategoryTheory.forget AddCommGrpCat.{v}), isSheaf_iff_isSheaf_of_type]
+  exact Presieve.isSheaf_iso J (NatIso.ofComponents (fun _ ↦ Iso.refl _) (by intros; rfl)) hG
+
+end PresheafOfModules.Submodule
+
+namespace SheafOfModules
+
+open PresheafOfModules
+
+variable {C : Type u₁} [Category.{v₁} C] {J : GrothendieckTopology C}
   [J.HasSheafCompose (forget₂ RingCat.{max v₁ u₁} AddCommGrpCat.{max v₁ u₁})]
   {R : Sheaf J RingCat.{max v₁ u₁}} (M : SheafOfModules.{v} R)
 
@@ -121,46 +156,32 @@ variable
 noncomputable def annihilator : SheafOfModules.{max v₁ u₁} R where
   val := M.val.annihilator
   isSheaf := by
-    -- The underlying type-valued presheaf of `unit R`, which is a sheaf.
-    let F : Cᵒᵖ ⥤ Type (max v₁ u₁) :=
-      (PresheafOfModules.unit R.obj).presheaf ⋙ CategoryTheory.forget AddCommGrpCat.{max v₁ u₁}
-    have hF : Presieve.IsSheaf J F :=
-      presieveIsSheaf_comp_forget (SheafOfModules.unit R).isSheaf
-    -- The annihilator as a subfunctor of `F`.
-    let G : Subfunctor F :=
-      { obj := fun X ↦ { r : R.obj.obj X | r ∈ M.val.annihilatorIdeal X }
-        map := fun {U V} i r hr ↦ M.val.annihilatorSystem.map_mem i hr }
+    refine M.val.annihilatorSubmodule.isSheaf_toPresheafOfModules
+      (SheafOfModules.unit R).isSheaf fun U s hs ↦ ?_
+    -- `s` lies in the annihilator ideal over `U`, i.e. it annihilates `M` locally.
+    change ∀ ⦃Y : Cᵒᵖ⦄ (f : U ⟶ Y) (m : M.val.obj Y), R.obj.map f s • m = 0
+    intro W φ m
     -- `M.val` is separated, as the underlying type-valued presheaf of a sheaf.
     have hsep : Presieve.IsSheaf J (M.val.presheaf ⋙ CategoryTheory.forget AddCommGrpCat.{v}) :=
       presieveIsSheaf_comp_forget M.isSheaf
-    -- The annihilator subfunctor is a sheaf: it is closed under the topology.
-    have hG : Presieve.IsSheaf J G.toFunctor := by
-      rw [G.isSheaf_iff hF]
-      intro U s hs
-      change ∀ ⦃Y : Cᵒᵖ⦄ (f : U ⟶ Y) (m : M.val.obj Y), R.obj.map f s • m = 0
-      intro W φ m
-      -- Pull back the covering sieve along the morphism underlying `φ`.
-      have hpb : Sieve.pullback φ.unop (G.sieveOfSection s) ∈ J W.unop :=
-        J.pullback_stable φ.unop hs
-      -- It suffices, by separatedness, that every restriction of `R.map φ s • m` vanishes.
-      apply (hsep _ hpb).isSeparatedFor.ext
-      intro Y f hf
-      -- On the pulled-back sieve, the relevant section lies in the annihilator ideal.
-      have hcomp : (f ≫ φ.unop).op = φ ≫ f.op := by rw [op_comp, Quiver.Hom.op_unop]
-      have key : R.obj.map (φ ≫ f.op) s ∈ M.val.annihilatorIdeal (op Y) := by
-        rw [← hcomp]; exact hf
-      -- Hence it annihilates the restriction of `m`.
-      have h0 : R.obj.map (φ ≫ f.op) s • M.val.map f.op m = 0 := by
-        have h := (mem_annihilatorIdeal _).mp key (𝟙 (op Y))
-          (M.val.map f.op m : M.val.obj (op Y))
-        rwa [R.obj.map_id, RingCat.id_apply] at h
-      change M.val.map f.op (R.obj.map φ s • m) = M.val.map f.op 0
-      rw [map_zero, M.val.map_smul, ← RingCat.comp_apply, ← R.obj.map_comp, h0]
-    -- Transfer the sheaf condition back to `M.val.annihilator.presheaf`.
-    rw [Presheaf.isSheaf_iff_isSheaf_forget (J := J)
-        (s := CategoryTheory.forget AddCommGrpCat.{max v₁ u₁}),
-      isSheaf_iff_isSheaf_of_type]
-    exact Presieve.isSheaf_iso J (NatIso.ofComponents (fun _ ↦ Iso.refl _) (by intros; rfl)) hG
+    -- Pull back the covering sieve along the morphism underlying `φ`.
+    have hpb : Sieve.pullback φ.unop
+        (M.val.annihilatorSubmodule.toSubfunctor.sieveOfSection s) ∈ J W.unop :=
+      J.pullback_stable φ.unop hs
+    -- It suffices, by separatedness, that every restriction of `R.map φ s • m` vanishes.
+    apply (hsep _ hpb).isSeparatedFor.ext
+    intro Y f hf
+    -- On the pulled-back sieve, the relevant section lies in the annihilator ideal.
+    have hcomp : (f ≫ φ.unop).op = φ ≫ f.op := by rw [op_comp, Quiver.Hom.op_unop]
+    have key : R.obj.map (φ ≫ f.op) s ∈ M.val.annihilatorIdeal (op Y) := by
+      rw [← hcomp]; exact hf
+    -- Hence it annihilates the restriction of `m`.
+    have h0 : R.obj.map (φ ≫ f.op) s • M.val.map f.op m = 0 := by
+      have h := (mem_annihilatorIdeal _).mp key (𝟙 (op Y))
+        (M.val.map f.op m : M.val.obj (op Y))
+      rwa [R.obj.map_id, RingCat.id_apply] at h
+    change M.val.map f.op (R.obj.map φ s • m) = M.val.map f.op 0
+    rw [map_zero, M.val.map_smul, ← RingCat.comp_apply, ← R.obj.map_comp, h0]
 
 /-- The inclusion of the annihilator of `M` into `unit R`. -/
 noncomputable def annihilatorι : M.annihilator ⟶ unit R :=

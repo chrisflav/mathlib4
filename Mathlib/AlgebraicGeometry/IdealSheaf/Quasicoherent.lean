@@ -35,6 +35,8 @@ its sections on affine opens.
   an `IdealSheafData`.
 * `SheafOfModules.IdealSheaf.toIdealSheafData`: the `IdealSheafData` of sections of a quasi-coherent
   ideal sheaf.
+* `AlgebraicGeometry.Scheme.IdealSheafData.orderIsoQuasicoherentIdealSheaf`: the order isomorphism
+  between `Scheme.IdealSheafData X` and quasi-coherent ideal sheaves of `𝒪ₓ`.
 
 ## Main results
 
@@ -46,8 +48,11 @@ its sections on affine opens.
 * `SheafOfModules.IdealSheaf.over_isQuasicoherent_iff`: the affine-local criterion (the *engine* of
   the correspondence) characterising quasi-coherence over an affine open by the basic-open
   localization condition on sections.
+* `SheafOfModules.IdealSheaf.toIdealSheafData_toIdealSheaf`: passing from a quasi-coherent ideal
+  sheaf to its `IdealSheafData` and back recovers the original sheaf.
 
-The resulting order isomorphism is left for future work.
+These assemble into the order isomorphism
+`AlgebraicGeometry.Scheme.IdealSheafData.orderIsoQuasicoherentIdealSheaf`.
 -/
 
 @[expose] public section
@@ -73,14 +78,6 @@ end SheafOfModules.IdealSheaf
 namespace AlgebraicGeometry.Scheme.IdealSheafData
 
 variable {X : Scheme.{u}}
-
-/-- The underlying type-valued presheaf of an `AddCommGrpCat`-valued sheaf is a sheaf of types.
-A local copy of the (private) lemma of the same name in `Sheaf/Annihilator.lean`. -/
-private lemma presieveIsSheaf_comp_forget {C : Type u₁} [Category.{v₁} C]
-    {J : GrothendieckTopology C} {A : Cᵒᵖ ⥤ AddCommGrpCat.{u}} (h : Presheaf.IsSheaf J A) :
-    Presieve.IsSheaf J (A ⋙ CategoryTheory.forget AddCommGrpCat.{u}) :=
-  Presieve.isSheaf_iso J (Functor.isoWhiskerLeft A AddCommGrpCat.coyonedaObjIsoForget)
-    (h (AddCommGrpCat.of (ULift.{u} ℤ)))
 
 /-- An element of `Γ(X, W)` (with `W` affine) lies in `D.ideal W` as soon as, locally on a cover of
 `W` by basic opens, its restriction lies in the corresponding ideal of the datum. -/
@@ -138,7 +135,7 @@ noncomputable def toIdealSheaf : SheafOfModules.IdealSheaf X.ringCatSheaf where
     let F : (Opens X)ᵒᵖ ⥤ Type u :=
       (PresheafOfModules.unit R.obj).presheaf ⋙ CategoryTheory.forget AddCommGrpCat.{u}
     have hF : Presieve.IsSheaf (Opens.grothendieckTopology X) F :=
-      presieveIsSheaf_comp_forget (SheafOfModules.unit R).isSheaf
+      SheafOfModules.presieveIsSheaf_comp_forget (SheafOfModules.unit R).isSheaf
     let G : Subfunctor F :=
       { obj := fun V ↦ { r : R.obj.obj V | ∀ (W : X.affineOpens) (i : V ⟶ op W.1),
           (R.obj.map i).hom r ∈ D.ideal W }
@@ -591,7 +588,7 @@ lemma toIdealSheafData_toIdealSheaf (I : SheafOfModules.IdealSheaf X.ringCatShea
     let F : (Opens X)ᵒᵖ ⥤ Type u :=
       (PresheafOfModules.unit R.obj).presheaf ⋙ CategoryTheory.forget AddCommGrpCat.{u}
     have hF : Presieve.IsSheaf (Opens.grothendieckTopology X) F :=
-      AlgebraicGeometry.Scheme.IdealSheafData.presieveIsSheaf_comp_forget
+      SheafOfModules.presieveIsSheaf_comp_forget
         (SheafOfModules.unit R).isSheaf
     let GI : Subfunctor F :=
       { obj := fun V ↦ { r : R.obj.obj V | r ∈ I.ideal V }
@@ -600,7 +597,7 @@ lemma toIdealSheafData_toIdealSheaf (I : SheafOfModules.IdealSheaf X.ringCatShea
       have hI' : Presieve.IsSheaf (Opens.grothendieckTopology X)
           (I.toSubmodule.toPresheafOfModules.presheaf ⋙
             CategoryTheory.forget AddCommGrpCat.{u}) :=
-        AlgebraicGeometry.Scheme.IdealSheafData.presieveIsSheaf_comp_forget I.isSheaf
+        SheafOfModules.presieveIsSheaf_comp_forget I.isSheaf
       exact Presieve.isSheaf_iso _
         (NatIso.ofComponents (fun _ ↦ Iso.refl _) (by intros; rfl)) hI'
     refine (GI.isSheaf_iff hF).mp hGI U r ?_
