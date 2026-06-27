@@ -110,8 +110,8 @@ variable (D : X.IdealSheafData)
 set_option backward.isDefEq.respectTransparency false in
 /-- The submodule system on `unit 𝒪ₓ` cut out by an `IdealSheafData`: over an open `V`, the sections
 `r` whose restriction to every affine open `W ≤ V` lies in `D.ideal W`. -/
-noncomputable def toSubmoduleSystem :
-    (PresheafOfModules.unit X.ringCatSheaf.obj).SubmoduleSystem :=
+noncomputable def toSubmodule :
+    (PresheafOfModules.unit X.ringCatSheaf.obj).Submodule :=
   let R : Sheaf _ RingCat.{u} := X.ringCatSheaf
   { toSubmodule := fun V ↦
       { carrier := { r | ∀ (W : X.affineOpens) (i : V ⟶ op W.1),
@@ -129,7 +129,7 @@ noncomputable def toSubmoduleSystem :
 set_option backward.isDefEq.respectTransparency false in
 /-- The ideal subsheaf of `𝒪ₓ` determined by an `IdealSheafData`. -/
 noncomputable def toIdealSheaf : SheafOfModules.IdealSheaf X.ringCatSheaf where
-  toSubmoduleSystem := D.toSubmoduleSystem
+  toSubmodule := D.toSubmodule
   isSheaf := by
     let R : Sheaf _ RingCat.{u} := X.ringCatSheaf
     have comp : ∀ {A B E : (Opens X)ᵒᵖ} (p : A ⟶ B) (q : B ⟶ E) (t : R.obj.obj A),
@@ -142,7 +142,7 @@ noncomputable def toIdealSheaf : SheafOfModules.IdealSheaf X.ringCatSheaf where
     let G : Subfunctor F :=
       { obj := fun V ↦ { r : R.obj.obj V | ∀ (W : X.affineOpens) (i : V ⟶ op W.1),
           (R.obj.map i).hom r ∈ D.ideal W }
-        map := @fun U V f m hm ↦ D.toSubmoduleSystem.map_mem f hm }
+        map := @fun U V f m hm ↦ D.toSubmodule.map_mem f hm }
     have hG : Presieve.IsSheaf (Opens.grothendieckTopology X) G.toFunctor := by
       rw [G.isSheaf_iff hF]
       intro U s hs W i
@@ -595,10 +595,10 @@ lemma toIdealSheafData_toIdealSheaf (I : SheafOfModules.IdealSheaf X.ringCatShea
         (SheafOfModules.unit R).isSheaf
     let GI : Subfunctor F :=
       { obj := fun V ↦ { r : R.obj.obj V | r ∈ I.ideal V }
-        map := @fun A B f m hm ↦ I.toSubmoduleSystem.map_mem f hm }
+        map := @fun A B f m hm ↦ I.toSubmodule.map_mem f hm }
     have hGI : Presieve.IsSheaf (Opens.grothendieckTopology X) GI.toFunctor := by
       have hI' : Presieve.IsSheaf (Opens.grothendieckTopology X)
-          (I.toSubmoduleSystem.toPresheafOfModules.presheaf ⋙
+          (I.toSubmodule.toPresheafOfModules.presheaf ⋙
             CategoryTheory.forget AddCommGrpCat.{u}) :=
         AlgebraicGeometry.Scheme.IdealSheafData.presieveIsSheaf_comp_forget I.isSheaf
       exact Presieve.isSheaf_iso _
@@ -612,7 +612,7 @@ lemma toIdealSheafData_toIdealSheaf (I : SheafOfModules.IdealSheaf X.ringCatShea
     exact hr ⟨W, hWaff⟩ (homOfLE hWU).op
   · -- trivial inclusion: `I` is restriction-stable
     intro r hr W i
-    have hmem := I.toSubmoduleSystem.map_mem i hr
+    have hmem := I.toSubmodule.map_mem i hr
     rwa [show (PresheafOfModules.unit R.obj).map i r = (R.obj.map i).hom r from rfl] at hmem
 
 end SheafOfModules.IdealSheaf

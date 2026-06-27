@@ -17,11 +17,11 @@ we construct the corresponding subobject of `M` in the category
 
 ## Main definitions
 
-* `PresheafOfModules.SubmoduleSystem M`: a family of submodules of `M`, stable
+* `PresheafOfModules.Submodule M`: a family of submodules of `M`, stable
   under restriction.
-* `PresheafOfModules.SubmoduleSystem.toPresheafOfModules`: the associated
+* `PresheafOfModules.Submodule.toPresheafOfModules`: the associated
   presheaf of modules.
-* `PresheafOfModules.SubmoduleSystem.ι`: the inclusion into `M`, a monomorphism.
+* `PresheafOfModules.Submodule.ι`: the inclusion into `M`, a monomorphism.
 
 -/
 
@@ -38,19 +38,19 @@ variable {C : Type u₁} [Category.{v₁} C] {R : Cᵒᵖ ⥤ RingCat.{u}}
 /-- A family of submodules `N X ≤ M.obj X` of a presheaf of modules `M`, stable
 under the restriction maps of `M`. This is the data needed to cut out a
 subobject of `M` in `PresheafOfModules R`. -/
-structure SubmoduleSystem (M : PresheafOfModules.{v} R) where
+structure Submodule (M : PresheafOfModules.{v} R) where
   /-- the submodule of `M.obj X` -/
-  toSubmodule (X : Cᵒᵖ) : Submodule (R.obj X) (M.obj X)
+  toSubmodule (X : Cᵒᵖ) : _root_.Submodule (R.obj X) (M.obj X)
   /-- the family is stable under restriction -/
   map_mem ⦃X Y : Cᵒᵖ⦄ (f : X ⟶ Y) ⦃m : M.obj X⦄ (hm : m ∈ toSubmodule X) :
     M.map f m ∈ toSubmodule Y
 
-namespace SubmoduleSystem
+namespace Submodule
 
-variable {M : PresheafOfModules.{v} R} (N : M.SubmoduleSystem)
+variable {M : PresheafOfModules.{v} R} (N : M.Submodule)
 
 @[ext]
-lemma ext {N₁ N₂ : M.SubmoduleSystem} (h : ∀ X, N₁.toSubmodule X = N₂.toSubmodule X) :
+lemma ext {N₁ N₂ : M.Submodule} (h : ∀ X, N₁.toSubmodule X = N₂.toSubmodule X) :
     N₁ = N₂ := by
   cases N₁; cases N₂; congr 1; ext X : 1; exact h X
 
@@ -105,6 +105,6 @@ lemma mem_iff {X : Cᵒᵖ} (m : M.obj X) :
     (∃ n : N.toSubmodule X, (N.ι).app X n = m) ↔ m ∈ N.toSubmodule X :=
   ⟨fun ⟨n, hn⟩ ↦ hn ▸ n.2, fun hm ↦ ⟨⟨m, hm⟩, rfl⟩⟩
 
-end SubmoduleSystem
+end Submodule
 
 end PresheafOfModules

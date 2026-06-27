@@ -58,7 +58,7 @@ variable (M)
 
 /-- The annihilator of `M`, as a family of submodules of `unit R` stable under
 restriction. -/
-noncomputable def annihilatorSystem : (unit R).SubmoduleSystem where
+noncomputable def annihilatorSystem : (unit R).Submodule where
   toSubmodule X := M.annihilatorIdeal X
   map_mem {X Y} f r hr := by
     refine (mem_annihilatorIdeal _).mpr fun Z g m ↦ ?_

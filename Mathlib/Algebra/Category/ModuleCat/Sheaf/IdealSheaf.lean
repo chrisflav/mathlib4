@@ -56,9 +56,9 @@ whose associated presheaf of modules (a sub-presheaf of `unit R`) is a sheaf. It
 sheaf-of-modules incarnation of a sheaf of ideals. -/
 structure IdealSheaf where
   /-- the underlying restriction-stable family of ideals -/
-  toSubmoduleSystem : (PresheafOfModules.unit R.obj).SubmoduleSystem
+  toSubmodule : (PresheafOfModules.unit R.obj).Submodule
   /-- the associated presheaf of modules is a sheaf -/
-  isSheaf : Presheaf.IsSheaf J toSubmoduleSystem.toPresheafOfModules.presheaf
+  isSheaf : Presheaf.IsSheaf J toSubmodule.toPresheafOfModules.presheaf
 
 namespace IdealSheaf
 
@@ -66,14 +66,14 @@ variable {R}
 
 /-- The ideal of sections of an ideal sheaf over `X`. -/
 def ideal (I : IdealSheaf R) (X : Cᵒᵖ) : Ideal (R.obj.obj X) :=
-  I.toSubmoduleSystem.toSubmodule X
+  I.toSubmodule.toSubmodule X
 
 @[ext]
 lemma ext {I J : IdealSheaf R} (h : ∀ X, I.ideal X = J.ideal X) : I = J := by
   obtain ⟨I, _⟩ := I
   obtain ⟨J, _⟩ := J
   congr 1
-  exact PresheafOfModules.SubmoduleSystem.ext h
+  exact PresheafOfModules.Submodule.ext h
 
 instance : PartialOrder (IdealSheaf R) :=
   PartialOrder.lift ideal (fun _ _ h ↦ ext (congrFun h))
@@ -82,17 +82,17 @@ lemma le_def {I J : IdealSheaf R} : I ≤ J ↔ ∀ X, I.ideal X ≤ J.ideal X :
 
 /-- The underlying sheaf of modules of an ideal sheaf. -/
 noncomputable def toSheafOfModules (I : IdealSheaf R) : SheafOfModules.{u} R where
-  val := I.toSubmoduleSystem.toPresheafOfModules
+  val := I.toSubmodule.toPresheafOfModules
   isSheaf := I.isSheaf
 
 variable [J.HasSheafCompose (forget₂ RingCat.{u} AddCommGrpCat.{u})]
 
 /-- The inclusion of an ideal sheaf into the unit `unit R`. -/
 noncomputable def ι (I : IdealSheaf R) : I.toSheafOfModules ⟶ unit R :=
-  ⟨I.toSubmoduleSystem.ι⟩
+  ⟨I.toSubmodule.ι⟩
 
 instance (I : IdealSheaf R) : Mono I.ι.val :=
-  inferInstanceAs (Mono I.toSubmoduleSystem.ι)
+  inferInstanceAs (Mono I.toSubmodule.ι)
 
 end IdealSheaf
 
@@ -102,7 +102,7 @@ variable [J.HasSheafCompose (forget₂ RingCat.{u} AddCommGrpCat.{u})]
 noncomputable def annihilatorIdealSheaf {R : Sheaf J RingCat.{max v₁ u₁}}
     [J.HasSheafCompose (forget₂ RingCat.{max v₁ u₁} AddCommGrpCat.{max v₁ u₁})]
     (M : SheafOfModules.{v} R) : IdealSheaf R where
-  toSubmoduleSystem := M.val.annihilatorSystem
+  toSubmodule := M.val.annihilatorSystem
   isSheaf := M.annihilator.isSheaf
 
 end SheafOfModules
