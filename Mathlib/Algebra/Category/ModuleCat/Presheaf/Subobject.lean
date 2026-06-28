@@ -62,7 +62,8 @@ set_option backward.isDefEq.respectTransparency false in
 noncomputable def toPresheafOfModules : PresheafOfModules.{v} R where
   obj X := ModuleCat.of (R.obj X) (N.toSubmodule X)
   map {X Y} f := ModuleCat.ofHom
-      (Y := (ModuleCat.restrictScalars (R.map f).hom).obj (ModuleCat.of (R.obj Y) (N.toSubmodule Y)))
+      (Y := (ModuleCat.restrictScalars (R.map f).hom).obj
+        (ModuleCat.of (R.obj Y) (N.toSubmodule Y)))
     { toFun := fun m ↦ ⟨M.map f m.val, N.map_mem f m.property⟩
       map_add' := fun a b ↦ Subtype.ext (map_add (M.map f).hom a.val b.val)
       map_smul' := fun r m ↦ Subtype.ext (M.map_smul f r m.val) }
@@ -104,6 +105,7 @@ instance : PartialOrder M.Submodule where
 lemma le_def {N₁ N₂ : M.Submodule} :
     N₁ ≤ N₂ ↔ ∀ X, N₁.toSubmodule X ≤ N₂.toSubmodule X := Iff.rfl
 
+set_option backward.isDefEq.respectTransparency false in
 /-- The submodules of a presheaf of modules form a complete lattice, with order given by
 pointwise inclusion. All lattice operations are computed pointwise. -/
 @[simps! sup_toSubmodule inf_toSubmodule sSup_toSubmodule sInf_toSubmodule
@@ -114,8 +116,8 @@ instance : CompleteLattice M.Submodule where
       map_mem := by
         intro X Y f m hm
         obtain ⟨a, ha, b, hb, rfl⟩ := _root_.Submodule.mem_sup.mp hm
-        have h := _root_.Submodule.add_mem_sup (N₁.map_mem f ha) (N₂.map_mem f hb)
-        rwa [← map_add] at h }
+        rw [show M.map f (a + b) = M.map f a + M.map f b from map_add (M.presheaf.map f).hom a b]
+        exact _root_.Submodule.add_mem_sup (N₁.map_mem f ha) (N₂.map_mem f hb) }
   le_sup_left N₁ N₂ X := le_sup_left
   le_sup_right N₁ N₂ X := le_sup_right
   sup_le N₁ N₂ N₃ h₁ h₂ X := sup_le (h₁ X) (h₂ X)
@@ -134,10 +136,12 @@ instance : CompleteLattice M.Submodule where
         | mem N x hx =>
           exact _root_.Submodule.mem_iSup_of_mem (N : M.Submodule)
             (_root_.Submodule.mem_iSup_of_mem N.2 ((N : M.Submodule).map_mem f hx))
-        | zero => simpa only [map_zero] using zero_mem (⨆ N ∈ S, N.toSubmodule Y)
+        | zero =>
+          rw [show M.map f 0 = 0 from map_zero (M.presheaf.map f).hom]
+          exact zero_mem _
         | add x y _ _ ihx ihy =>
-          have h := add_mem ihx ihy
-          rwa [← map_add] at h }
+          rw [show M.map f (x + y) = M.map f x + M.map f y from map_add (M.presheaf.map f).hom x y]
+          exact add_mem ihx ihy }
   isLUB_sSup S := ⟨fun N hN X ↦ le_iSup₂_of_le N hN le_rfl,
     fun N hN X ↦ iSup₂_le fun N' hN' ↦ hN hN' X⟩
   sInf S :=
@@ -148,9 +152,17 @@ instance : CompleteLattice M.Submodule where
         exact fun N hN ↦ N.map_mem f (hm N hN) }
   isGLB_sInf S := ⟨fun N hN X ↦ iInf₂_le_of_le N hN le_rfl,
     fun N hN X ↦ le_iInf₂ fun N' hN' ↦ hN hN' X⟩
-  bot := { toSubmodule _ := ⊥ }
+  bot :=
+    { toSubmodule _ := ⊥
+      map_mem := by
+        intro X Y f m hm
+        obtain rfl := (_root_.Submodule.mem_bot _).mp hm
+        rw [show M.map f 0 = 0 from map_zero (M.presheaf.map f).hom]
+        exact zero_mem _ }
   bot_le N X := bot_le
-  top := { toSubmodule _ := ⊤ }
+  top :=
+    { toSubmodule _ := ⊤
+      map_mem _ _ _ _ _ := _root_.Submodule.mem_top }
   le_top N X := le_top
 
 end Lattice

@@ -122,23 +122,24 @@ variable {C : Type u₁} [Category.{v₁} C] {J : GrothendieckTopology C} {R : C
 family of submodules `N`. -/
 def toSubfunctor : Subfunctor (M.presheaf ⋙ CategoryTheory.forget AddCommGrpCat.{v}) where
   obj X := { m : M.obj X | m ∈ N.toSubmodule X }
-  map {X Y} f m hm := N.map_mem f hm
+  map f _ hm := N.map_mem f hm
 
 /-- **Sheaf condition for a subobject cut out by a family of submodules.**
 If the ambient presheaf of modules `M` is a sheaf and the family `N` is *local* for `J` (a section
 of `M` whose restrictions lie in `N` on some covering sieve already lies in `N`), then the
 associated presheaf of modules `N.toPresheafOfModules` is a sheaf. This is the boilerplate behind
 every concrete ideal/annihilator subsheaf; the only input that varies is `hlocal`. -/
-lemma isSheaf_toPresheafOfModules (hM : Presheaf.IsSheaf J M.presheaf)
+lemma isSheaf_toPresheafOfModules {M : PresheafOfModules.{max v₁ u₁} R} (N : M.Submodule)
+    (hM : Presheaf.IsSheaf J M.presheaf)
     (hlocal : ∀ ⦃X : Cᵒᵖ⦄ (s : M.obj X),
       N.toSubfunctor.sieveOfSection s ∈ J X.unop → s ∈ N.toSubmodule X) :
     Presheaf.IsSheaf J N.toPresheafOfModules.presheaf := by
-  have hF : Presieve.IsSheaf J (M.presheaf ⋙ CategoryTheory.forget AddCommGrpCat.{v}) :=
+  have hF : Presieve.IsSheaf J (M.presheaf ⋙ CategoryTheory.forget AddCommGrpCat.{max v₁ u₁}) :=
     SheafOfModules.presieveIsSheaf_comp_forget hM
   have hG : Presieve.IsSheaf J N.toSubfunctor.toFunctor :=
     (N.toSubfunctor.isSheaf_iff hF).mpr fun _ s hs ↦ hlocal s hs
   rw [Presheaf.isSheaf_iff_isSheaf_forget (J := J)
-      (s := CategoryTheory.forget AddCommGrpCat.{v}), isSheaf_iff_isSheaf_of_type]
+      (s := CategoryTheory.forget AddCommGrpCat.{max v₁ u₁}), isSheaf_iff_isSheaf_of_type]
   exact Presieve.isSheaf_iso J (NatIso.ofComponents (fun _ ↦ Iso.refl _) (by intros; rfl)) hG
 
 end PresheafOfModules.Submodule
