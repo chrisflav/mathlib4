@@ -193,6 +193,7 @@ public import Mathlib.Algebra.Category.ModuleCat.Presheaf.Pushforward
 public import Mathlib.Algebra.Category.ModuleCat.Presheaf.PushforwardZeroMonoidal
 public import Mathlib.Algebra.Category.ModuleCat.Presheaf.Sheafification
 public import Mathlib.Algebra.Category.ModuleCat.Presheaf.Sheafify
+public import Mathlib.Algebra.Category.ModuleCat.Presheaf.Subobject
 public import Mathlib.Algebra.Category.ModuleCat.Products
 public import Mathlib.Algebra.Category.ModuleCat.Projective
 public import Mathlib.Algebra.Category.ModuleCat.ProjectiveDimension
@@ -200,13 +201,16 @@ public import Mathlib.Algebra.Category.ModuleCat.Pseudofunctor
 public import Mathlib.Algebra.Category.ModuleCat.Semi
 public import Mathlib.Algebra.Category.ModuleCat.Sheaf
 public import Mathlib.Algebra.Category.ModuleCat.Sheaf.Abelian
+public import Mathlib.Algebra.Category.ModuleCat.Sheaf.Annihilator
 public import Mathlib.Algebra.Category.ModuleCat.Sheaf.ChangeOfRings
 public import Mathlib.Algebra.Category.ModuleCat.Sheaf.Colimits
 public import Mathlib.Algebra.Category.ModuleCat.Sheaf.Free
 public import Mathlib.Algebra.Category.ModuleCat.Sheaf.Generators
+public import Mathlib.Algebra.Category.ModuleCat.Sheaf.IdealSheaf
 public import Mathlib.Algebra.Category.ModuleCat.Sheaf.Limits
 public import Mathlib.Algebra.Category.ModuleCat.Sheaf.Localization
 public import Mathlib.Algebra.Category.ModuleCat.Sheaf.LocallyFree
+public import Mathlib.Algebra.Category.ModuleCat.Sheaf.LocallySurjective
 public import Mathlib.Algebra.Category.ModuleCat.Sheaf.PullbackContinuous
 public import Mathlib.Algebra.Category.ModuleCat.Sheaf.PullbackFree
 public import Mathlib.Algebra.Category.ModuleCat.Sheaf.PushforwardContinuous
@@ -215,8 +219,11 @@ public import Mathlib.Algebra.Category.ModuleCat.Simple
 public import Mathlib.Algebra.Category.ModuleCat.Stalk
 public import Mathlib.Algebra.Category.ModuleCat.Subobject
 public import Mathlib.Algebra.Category.ModuleCat.Tannaka
+public import Mathlib.Algebra.Category.ModuleCat.Topology.AnnihilatorStalk
+public import Mathlib.Algebra.Category.ModuleCat.Topology.AnnihilatorStalkFiniteType
 public import Mathlib.Algebra.Category.ModuleCat.Topology.Basic
 public import Mathlib.Algebra.Category.ModuleCat.Topology.Homology
+public import Mathlib.Algebra.Category.ModuleCat.Topology.SheafifyInstances
 public import Mathlib.Algebra.Category.ModuleCat.Ulift
 public import Mathlib.Algebra.Category.MonCat.Adjunctions
 public import Mathlib.Algebra.Category.MonCat.Basic
@@ -1393,6 +1400,7 @@ public import Mathlib.AlgebraicGeometry.Group.Smooth
 public import Mathlib.AlgebraicGeometry.IdealSheaf.Basic
 public import Mathlib.AlgebraicGeometry.IdealSheaf.Functorial
 public import Mathlib.AlgebraicGeometry.IdealSheaf.IrreducibleComponent
+public import Mathlib.AlgebraicGeometry.IdealSheaf.Quasicoherent
 public import Mathlib.AlgebraicGeometry.IdealSheaf.Subscheme
 public import Mathlib.AlgebraicGeometry.Limits
 public import Mathlib.AlgebraicGeometry.LimitsOver
