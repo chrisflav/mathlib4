@@ -247,6 +247,11 @@ to module `Foo.Bar` (no `srcDir` indirection).
   successful master build and publishes the result to the
   [`crossref-exports`](https://github.com/leanprover-community/crossref-exports) repository
   (committing only when the entries actually change).
+- `count_decls.lean`
+  run via `lake exe count_decls [--graph-only] <namespace>...`, the command-line counterpart of the
+  `#count_decls` command. For each namespace it prints a data-vs-proof breakdown, a per-file
+  breakdown and a colour-coded Graphviz dependency graph of the files involved. Pass `_root_` to
+  inspect the whole environment, or `--graph-only` to print just the `digraph` (pipe into `dot`).
 - `autolabel.lean` is the Lean script in charge of automatically adding a `t-`label on eligible PRs.
   Autolabelling is inferred by which directories the current PR modifies.
 - `auto_commit.sh` runs a command and creates a commit with the result. The commit message format

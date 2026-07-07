@@ -137,6 +137,12 @@ Currently, these checks are quite lenient, but could be made stricter in the fut
 lean_exe «check_title_labels» where
   srcDir := "scripts"
 
+/-- `lake exe count_decls [--graph-only] <namespace>...` prints a data-vs-proof breakdown, a
+per-file breakdown and a Graphviz dependency graph of the declarations in the given namespaces. -/
+lean_exe count_decls where
+  srcDir := "scripts"
+  supportInterpreter := true
+
 /-- `lake exe nightly-testing-checklist` reports nightly-testing branch status. -/
 lean_exe «nightly-testing-checklist» where
   srcDir := "scripts"
